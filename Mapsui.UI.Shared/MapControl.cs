@@ -3,6 +3,7 @@ using Mapsui.Geometries.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Mapsui.Utilities;
 
 #if __ANDROID__
 namespace Mapsui.UI.Android
@@ -155,8 +156,7 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            // TODO
-            // Perform standard behavior
+            DefaultZoomedHandler(args);
 
             return true;
         }
@@ -174,8 +174,7 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            // TODO
-            // Perform standard behavior
+            DefaultZoomedHandler(args);
 
             return true;
         }
@@ -540,6 +539,35 @@ namespace Mapsui.UI.Wpf
                 temp.RefreshGraphics -= MapRefreshGraphics;
                 temp.AbortFetch();
             }
+        }
+
+
+        private void DefaultZoomedHandler(ZoomedEventArgs e)
+        {
+            if (!_map.Viewport.Initialized) return;
+            if (ZoomLock) return;
+
+            double resolution = e.Direction == ZoomDirection.ZoomIn ? ZoomHelper.ZoomIn(Map.Resolutions, Map.Viewport.Resolution) : ZoomHelper.ZoomOut(Map.Resolutions, Map.Viewport.Resolution);
+
+            resolution = ViewportLimiter.LimitResolution(resolution, _map.Viewport.Width, _map.Viewport.Height,
+                _map.ZoomMode, _map.ZoomLimits, _map.Resolutions, _map.Envelope);
+
+            // 1) Temporarily center on the mouse position
+            Map.Viewport.Center = Map.Viewport.ScreenToWorld(e.ScreenPosition);
+
+            // 2) Then zoom 
+            Map.Viewport.Resolution = resolution;
+
+            // 3) Then move the temporary center of the map back to the mouse position
+            Map.Viewport.Center = Map.Viewport.ScreenToWorld(
+                Map.Viewport.Width - e.ScreenPosition.X,
+                Map.Viewport.Height - e.ScreenPosition.Y);
+
+            e.Handled = true;
+
+            RefreshGraphics();
+            _map.ViewChanged(true);
+            OnViewChanged(true);
         }
     }
 }

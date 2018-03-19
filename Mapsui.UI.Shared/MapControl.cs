@@ -1,9 +1,10 @@
-﻿using Mapsui.Geometries;
-using Mapsui.Geometries.Utilities;
+﻿using Mapsui.Geometries.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using Mapsui.Utilities;
+using Point = Mapsui.Geometries.Point;
 
 #if __ANDROID__
 namespace Mapsui.UI.Android
@@ -34,9 +35,24 @@ namespace Mapsui.UI.Wpf
         private TouchMode _mode = TouchMode.None;
 
         /// <summary>
-        /// Saver for center before last pinch movement
+        /// Saver for center before last pinch movement, or the previous touch start (left mouse down/finger/pen) position 
         /// </summary>
         private Geometries.Point _previousCenter = new Geometries.Point();
+
+        /// <summary>
+        /// Saver for the previous touch start (left mouse down/finger/pen) position 
+        /// </summary>
+        private Geometries.Point _previousTouchStart = new Geometries.Point();
+
+        /// <summary>
+        /// Saver for the previous single tap position 
+        /// </summary>
+        private Geometries.Point _previousTap = new Geometries.Point();
+
+        /// <summary>
+        /// Saver for the previous single tap time 
+        /// </summary>
+        private int? _previousTapTime;
 
         /// <summary>
         /// Saver for angle before last pinch movement
@@ -139,6 +155,7 @@ namespace Mapsui.UI.Wpf
         /// </summary>
         public double ReSnapRotationDegrees { get; set; }
 
+        
         /// <summary>
         /// Event handlers
         /// </summary>
@@ -189,7 +206,12 @@ namespace Mapsui.UI.Wpf
 
             Hovered?.Invoke(this, args);
 
-            return args.Handled;
+            if (args.Handled)
+                return true;
+
+            var hoverHandled = Map.InvokeHover(screenPosition, _scale, Renderer.SymbolCache);
+
+            return hoverHandled;
         }
 
         /// <summary>
@@ -230,9 +252,9 @@ namespace Mapsui.UI.Wpf
         /// Called, when mouse/finger/pen click/touch map
         /// </summary>
         /// <param name="touchPoints">List of all touched points</param>
-        private bool OnTouchStart(List<Geometries.Point> touchPoints)
+        private bool OnTouchStart(List<Geometries.Point> touchPoints, int? timestamp = null)
         {
-            var args = new TouchedEventArgs(touchPoints);
+            var args = new TouchedEventArgs(touchPoints, timestamp);
 
             TouchStarted?.Invoke(this, args);
 
@@ -243,15 +265,28 @@ namespace Mapsui.UI.Wpf
             {
                 (_previousCenter, _previousRadius, _previousAngle) = GetPinchValues(touchPoints);
                 _mode = TouchMode.Zooming;
+                Console.WriteLine("Switched to zooming");
                 _innerRotation = _map.Viewport.Rotation;
+                _previousTouchStart = null;
             }
             else
             {
                 _mode = TouchMode.Dragging;
+                Console.WriteLine("Switched to dragging");
                 _previousCenter = touchPoints.First();
+                _previousTouchStart = _previousCenter;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Overload for OnTouchStart with a single point as argument.
+        /// </summary>
+        /// <param name="touchPoint">Touched point</param>
+        private bool OnTouchStart(Geometries.Point touchPoint, int? timestamp = null)
+        {
+            return OnTouchStart(new List<Point>() { touchPoint }, timestamp);
         }
 
         /// <summary>
@@ -259,21 +294,38 @@ namespace Mapsui.UI.Wpf
         /// </summary>
         /// <param name="touchPoints">List of all touched points</param>
         /// <param name="releasedPoint">Released point, which was touched before</param>
-        private bool OnTouchEnd(List<Geometries.Point> touchPoints, Geometries.Point releasedPoint)
+        private bool OnTouchEnd(List<Geometries.Point> touchPoints, Geometries.Point releasedPoint, int? timestamp = null)
         {
-            var args = new TouchedEventArgs(touchPoints);
+            var args = new TouchedEventArgs(touchPoints, timestamp);
 
             TouchEnded?.Invoke(this, args);
 
             // Last touch released
-            if (touchPoints.Count == 0)
+            if (touchPoints.Count == 0) // Will always be true for WPF ManipulationCompleted
             {
+                // Check if the touch event was actually a tap/click
+                if (_previousTouchStart != null && IsClick(_previousTouchStart, releasedPoint) && _mode == TouchMode.Dragging)
+                {
+                    _mode = TouchMode.None;
+                    return OnSingleTapped(releasedPoint, timestamp);
+                }
+
+                _invalid = true;
+                OnViewChanged(true);
+                RefreshGraphics();
                 InvalidateCanvas();
+
                 _mode = TouchMode.None;
                 _map.ViewChanged(true);
             }
 
             return args.Handled;
+        }
+
+        
+        private bool OnTouchEnd(Geometries.Point releasedPoint, int? timestamp = null)
+        {
+            return OnTouchEnd(new List<Point>(), releasedPoint, timestamp);
         }
 
         /// <summary>
@@ -288,6 +340,7 @@ namespace Mapsui.UI.Wpf
 
             if (args.Handled)
                 return true;
+               
 
             switch (_mode)
             {
@@ -304,7 +357,7 @@ namespace Mapsui.UI.Wpf
 
                             ViewportLimiter.LimitExtent(_map.Viewport, _map.PanMode, _map.PanLimits, _map.Envelope);
 
-                            InvalidateCanvas();
+                            RefreshGraphics();
                         }
 
                         _previousCenter = touchPosition;
@@ -330,7 +383,7 @@ namespace Mapsui.UI.Wpf
                             else if (_innerRotation < -180)
                                 _innerRotation += 360;
 
-                            if (_map.Viewport.Rotation == 0 && Math.Abs(_innerRotation) >= Math.Abs(UnSnapRotationDegrees))
+                            if (_map.Viewport.Rotation == 0 && Math.Abs(_innerRotation) >= Math.Abs(UnSnapRotationDegrees) && Math.Abs(radius) > (SystemParameters.MinimumHorizontalDragDistance*20.0))
                                 rotationDelta = _innerRotation;
                             else if (_map.Viewport.Rotation != 0)
                             {
@@ -349,7 +402,7 @@ namespace Mapsui.UI.Wpf
                             _map.ZoomMode, _map.ZoomLimits, _map.Resolutions,
                             _map.PanMode, _map.PanLimits, _map.Envelope);
 
-                        InvalidateCanvas();
+                        Refresh();
                     }
                     break;
             }
@@ -364,6 +417,9 @@ namespace Mapsui.UI.Wpf
         /// <param name="numOfTaps">Number of taps on map (2 is a double click/tap)</param>
         private bool OnDoubleTapped(Geometries.Point screenPosition, int numOfTaps)
         {
+            // Cancel the dragging mode that was set by the first (single) tap.
+            _mode = TouchMode.None; 
+
             var args = new TappedEventArgs(screenPosition, numOfTaps);
 
             DoubleTap?.Invoke(this, args);
@@ -386,10 +442,30 @@ namespace Mapsui.UI.Wpf
         /// Called, when mouse/finger/pen tapped on map one time
         /// </summary>
         /// <param name="screenPosition">Clicked/touched position on screen</param>
-        private bool OnSingleTapped(Geometries.Point screenPosition)
+        private bool OnSingleTapped(Geometries.Point screenPosition, int? timestamp = null)
         {
             var args = new TappedEventArgs(screenPosition, 1);
 
+            if (!_previousTap.IsEmpty() && timestamp != null && _previousTapTime != null)
+            {
+                // TODO make this configurable?
+                var maxDoubleTapDistance = 12.0f * Math.Max(SystemParameters.MinimumHorizontalDragDistance,
+                    SystemParameters.MinimumVerticalDragDistance);
+
+                var previousTapWasCloseby = Algorithms.Distance(_previousTap, screenPosition) < maxDoubleTapDistance;
+
+                var previousTapWasRecent = (timestamp - _previousTapTime) < 300;
+
+                if (previousTapWasCloseby && previousTapWasRecent)
+                {
+                    _previousTap = default(Point);
+                    _previousTapTime = null;
+                    OnDoubleTapped(screenPosition, 2);
+                }
+            }
+
+            _previousTap = screenPosition;
+            _previousTapTime = timestamp;
             SingleTap?.Invoke(this, args);
 
             if (args.Handled)
@@ -568,6 +644,13 @@ namespace Mapsui.UI.Wpf
             RefreshGraphics();
             _map.ViewChanged(true);
             OnViewChanged(true);
+        }
+
+        private static bool IsClick(Point currentPosition, Point previousPosition)
+        {
+            return
+                Math.Abs(currentPosition.X - previousPosition.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPosition.Y - previousPosition.Y) < SystemParameters.MinimumVerticalDragDistance;
         }
     }
 }

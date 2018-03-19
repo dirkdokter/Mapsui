@@ -7,10 +7,12 @@ namespace Mapsui.UI
     {
         public List<Geometries.Point> ScreenPoints { get; }
         public bool Handled { get; set; } = false;
+        public int? Timestamp { get; set; }
 
-        public TouchedEventArgs(List<Geometries.Point> screenPoints)
+        public TouchedEventArgs(List<Geometries.Point> screenPoints, int? timestamp = null)
         {
             ScreenPoints = screenPoints;
+            Timestamp = timestamp;
         }
     }
 }

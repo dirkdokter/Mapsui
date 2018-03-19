@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="ExtensionMethods\PointExtensions.cs" />
     <Compile Include="MapControl.cs" />
+    <Compile Include="MapControlUserInputHandling.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RenderingWeakEventManager.cs" />
   </ItemGroup>

@@ -1,9 +1,11 @@
 ﻿using Mapsui.Geometries.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using Mapsui.Utilities;
+using Mapsui.Layers;
 using Point = Mapsui.Geometries.Point;
 
 #if __ANDROID__
@@ -674,5 +676,34 @@ namespace Mapsui.UI.Wpf
             _map?.ClearCache();
             RefreshGraphics();
         }
+
+
+
+
+
+        public Map Map
+        {
+            get => _map;
+            set
+            {
+                if (_map != null)
+                {
+                    UnsubscribeFromMapEvents(_map);
+                    _map = null;
+                }
+
+                _map = value;
+
+                if (_map != null)
+                {
+                    SubscribeToMapEvents(_map);
+                    _map.ViewChanged(true);
+                    UpdateSize();
+                }
+
+                RefreshGraphics();
+            }
+        }
+
     }
 }

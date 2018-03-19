@@ -35,26 +35,19 @@ namespace Mapsui.UI.Wpf
             DependencyProperty.Register(
                 "Resolution", typeof(double), typeof(MapControl),
                 new PropertyMetadata(OnResolutionChanged));
-
-        private readonly Rectangle _selectRectangle = CreateSelectRectangle();
         
         private bool _invalid = true;
         private Map _map;
         
         private RenderMode _renderMode;
-        private double _innerRotation;
-
-        private bool ModifierCtrlPressed => (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl));
-        private bool ModifierShiftPressed => (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift));
-
-
+        
         public MapControl()
         {
             _scale = 1; // Scale is always 1 in WPF
 
             Children.Add(RenderCanvas);
             Children.Add(RenderElement);
-            Children.Add(_selectRectangle);
+            // TODO Children.Add(_selectRectangle);
 
             RenderElement.PaintSurface += SKElementOnPaintSurface;
             RenderingWeakEventManager.AddHandler(CompositionTargetRendering);
@@ -62,71 +55,12 @@ namespace Mapsui.UI.Wpf
             Map = new Map();
 
             Loaded += MapControlLoaded;
-
-            MouseLeftButtonDown += MapControlMouseLeftButtonDown;
-            MouseLeftButtonUp += MapControlMouseLeftButtonUp;
-            MouseMove += MapControlMouseMove;
-            MouseWheel += MapControlMouseWheel;
-
-            MouseLeave += MapControlMouseLeave;
-            
             SizeChanged += MapControlSizeChanged;
 
-            ManipulationStarting += MapControlManipulationStarting;
-            ManipulationStarted += MapControlManipulationStarted;
-            ManipulationDelta += MapControlManipulationDelta;
-            ManipulationCompleted += MapControlManipulationCompleted;
-
-            IsManipulationEnabled = true;
+            _addEventHandlers();
         }
-
       
-
-        private static Rectangle CreateSelectRectangle()
-        {
-            return new Rectangle
-            {
-                Fill = new SolidColorBrush(Colors.Red),
-                Stroke = new SolidColorBrush(Colors.Black),
-                StrokeThickness = 3,
-                RadiusX = 0.5,
-                RadiusY = 0.5,
-                StrokeDashArray = new DoubleCollection { 3.0 },
-                Opacity = 0.3,
-                VerticalAlignment = VerticalAlignment.Top,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Visibility = Visibility.Collapsed
-            };
-        }
-
         public IRenderer Renderer { get; set; } = new MapRenderer();
-
-        private bool IsInBoxZoomMode { get; set; }
-
-        public bool ZoomToBoxMode { get; set; }
-
-        public Map Map
-        {
-            get => _map;
-            set
-            {
-                if (_map != null)
-                {
-                    UnsubscribeFromMapEvents(_map);
-                    _map = null;
-                }
-
-                _map = value;
-
-                if (_map != null)
-                {
-                    SubscribeToMapEvents(_map);
-                    _map.ViewChanged(true);
-                }
-
-                RefreshGraphics();
-            }
-        }
 
         public string ErrorMessage { get; private set; }
         
@@ -180,13 +114,8 @@ namespace Mapsui.UI.Wpf
 
         public event EventHandler ErrorMessageChanged;
         public event EventHandler<ViewChangedEventArgs> ViewChanged;
-        public event EventHandler<FeatureInfoEventArgs> FeatureInfo;
         public event EventHandler ViewportInitialized;
 
-        private void MapRefreshGraphics(object sender, EventArgs eventArgs)
-        {
-            RefreshGraphics();
-        }
 
         private void MapPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -202,6 +131,11 @@ namespace Mapsui.UI.Wpf
                     RefreshGraphics();
                 }
             }
+        }
+
+        private void MapRefreshGraphics(object sender, EventArgs eventArgs)
+        {
+            RefreshGraphics();
         }
 
         private void OnViewChanged(bool userAction = false)
@@ -250,18 +184,7 @@ namespace Mapsui.UI.Wpf
             Focusable = true;
         }
 
-        private void MapControlMouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            if (e.Delta > Constants.Epsilon)
-            {
-                OnZoomIn(e.GetPosition(this).ToMapsui());
-            }
-            else if (e.Delta < Constants.Epsilon)
-            {
-                OnZoomOut(e.GetPosition(this).ToMapsui());
-            }
-            e.Handled = true;
-        }
+
 
         private void MapControlSizeChanged(object sender, SizeChangedEventArgs e)
         {
@@ -285,11 +208,7 @@ namespace Mapsui.UI.Wpf
             }
         }
 
-        private void MapControlMouseLeave(object sender, MouseEventArgs e)
-        {
-            _mode = TouchMode.None;
-            ReleaseMouseCapture();
-        }
+
 
         public void MapDataChanged(object sender, DataChangedEventArgs e) // todo: make private?
         {
@@ -326,31 +245,6 @@ namespace Mapsui.UI.Wpf
             }
         }
 
-        private void MapControlMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            CaptureMouse();
-
-            if (e.ClickCount > 1)
-            {
-                OnDoubleTapped(e.GetPosition(this).ToMapsui(), e.ClickCount);
-            }
-            else
-            {
-                OnTouchStart(e.GetPosition(this).ToMapsui());
-            }
-        }
-
-        private void MapControlMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ClickCount > 1)
-            {
-                throw new Exception("This should not happen. See https://github.com/pauldendulk/Mapsui/issues/344.");
-            }
-
-            OnTouchEnd(e.GetPosition(this).ToMapsui());
-
-            ReleaseMouseCapture();
-        }
 
         private void WidgetTouched(Widgets.IWidget widget, Geometries.Point screenPosition)
         {
@@ -360,29 +254,8 @@ namespace Mapsui.UI.Wpf
             widget.HandleWidgetTouched(screenPosition);
         }
 
-        private void OnFeatureInfo(IDictionary<string, IEnumerable<IFeature>> features)
-        {
-            FeatureInfo?.Invoke(this, new FeatureInfoEventArgs { FeatureInfo = features });
-        }
 
-        private bool MouseButtonsReleased(MouseEventArgs e)
-        {
-            return e.LeftButton == MouseButtonState.Released
-                   && e.MiddleButton == MouseButtonState.Released
-                   && e.RightButton == MouseButtonState.Released;
-        }
 
-        private void MapControlMouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                OnTouchMove(new List<Geometries.Point>() {e.GetPosition(this).ToMapsui()});
-            }
-            else if (MouseButtonsReleased(e))
-            {
-                OnHovered(e.GetPosition(this).ToMapsui());
-            }
-        }
         private void TryInitializeViewport()
         {
             if (_map.Viewport.Initialized) return;
@@ -423,41 +296,6 @@ namespace Mapsui.UI.Wpf
             _invalid = false;
         }
 
-        private void ClearBBoxDrawing()
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                _selectRectangle.Visibility = Visibility.Collapsed;
-            }));
-        }
-
-        private void DrawBbox(Point newPos)
-        {
-            /*if (_mouseDown)
-            {
-                var from = _previousMousePosition;
-                var to = newPos;
-
-                if (from.X > to.X)
-                {
-                    var temp = from;
-                    from.X = to.X;
-                    to.X = temp.X;
-                }
-
-                if (from.Y > to.Y)
-                {
-                    var temp = from;
-                    from.Y = to.Y;
-                    to.Y = temp.Y;
-                }
-
-                _selectRectangle.Width = to.X - from.X;
-                _selectRectangle.Height = to.Y - from.Y;
-                _selectRectangle.Margin = new Thickness(from.X, from.Y, 0, 0);
-                _selectRectangle.Visibility = Visibility.Visible;
-            }*/
-        }
 
         public void ZoomToFullEnvelope()
         {
@@ -467,46 +305,7 @@ namespace Mapsui.UI.Wpf
             Map.Viewport.Center = Map.Envelope.GetCentroid();
         }
 
-        private void MapControlManipulationStarting(object sender, ManipulationStartingEventArgs e)
-        {
-            // Capture touch to MapControl
-            e.ManipulationContainer = this; 
-            e.Handled = true;
-        }
-
-        private void MapControlManipulationStarted(object sender, ManipulationStartedEventArgs e)
-        {
-            OnTouchStart(e.Manipulators.ToMapsui(this), e.Timestamp); // Always one manipulator
-        }
-
-        private void MapControlManipulationDelta(object sender, ManipulationDeltaEventArgs e)
-        {
-            if (e.IsInertial)
-            {
-                Console.WriteLine(e.Manipulators.Count());
-            }
-            if (_mode == TouchMode.Dragging && e.Manipulators.Count() >= 2)
-            {
-                // Re-start the touch operation
-                OnTouchStart(e.Manipulators.ToMapsui(this));
-            }
-
-            var hasBeenManipulatedSignificantly = Math.Abs(e.DeltaManipulation.Translation.X) > SystemParameters.MinimumHorizontalDragDistance
-                                   || Math.Abs(e.DeltaManipulation.Translation.Y) > SystemParameters.MinimumVerticalDragDistance;
-
-            if (hasBeenManipulatedSignificantly)
-            {
-                OnTouchMove(e.Manipulators.ToMapsui(this));
-            }
-
-            e.Handled = true;
-        }
-
-        private void MapControlManipulationCompleted(object sender, ManipulationCompletedEventArgs e)
-        {
-            OnTouchEnd(e.Manipulators.ToMapsui(this), e.ManipulationOrigin.ToMapsui(), e.Timestamp);
-        }
-
+       
         private double GetDeltaScale(XamlVector scale)
         {
             if (ZoomLock) return 1;

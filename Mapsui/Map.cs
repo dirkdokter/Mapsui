@@ -230,16 +230,19 @@ namespace Mapsui
 
         private InfoEventArgs _previousHoverEventArgs;
 
-        public void InvokeHover(Point screenPosition, float scale, ISymbolCache symbolCache)
+        public bool InvokeHover(Point screenPosition, float scale, ISymbolCache symbolCache)
         {
-            if (Hover == null) return;
-            if (HoverLayers.Count == 0) return;
+            if (Hover == null) return false;
+            if (HoverLayers.Count == 0) return false;
             var hoverEventArgs = InfoHelper.GetInfoEventArgs(Viewport, screenPosition, scale, HoverLayers, symbolCache, 0);
-            if (hoverEventArgs?.Feature != _previousHoverEventArgs?.Feature) // only notify when the feature changes
+            if (hoverEventArgs?.Feature != _previousHoverEventArgs?.Feature && hoverEventArgs != null) // only notify when the feature changes
             {
                 _previousHoverEventArgs = hoverEventArgs;
                 Hover?.Invoke(this, hoverEventArgs);
+                return hoverEventArgs.Handled;
             }
+
+            return false;
         }
 
         private void LayersLayerAdded(ILayer layer)

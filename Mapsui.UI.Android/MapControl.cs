@@ -74,10 +74,10 @@ namespace Mapsui.UI.Android
         protected override void OnSizeChanged(int w, int h, int oldw, int oldh)
         {
             base.OnSizeChanged(w, h, oldw, oldh);
-            PushSizeOntoViewport();
+            UpdateSize();
         }
 
-        void PushSizeOntoViewport()
+        void UpdateSize()
         {
             if (Map != null)
             {
@@ -245,29 +245,7 @@ namespace Mapsui.UI.Android
                 motionEvent.GetY(0) - view.Top).ToMapsui();
         }
 
-        public Map Map
-        {
-            get => _map;
-            set
-            {
-                if (_map != null)
-                {
-                    UnsubscribeFromMapEvents(_map);
-                    _map = null;
-                }
 
-                _map = value;
-
-                if (_map != null)
-                {
-                    SubscribeToMapEvents(_map);
-                    _map.ViewChanged(true);
-                    PushSizeOntoViewport();
-                }
-
-                RefreshGraphics();
-            }
-        }
 
         private void MapRefreshGraphics(object sender, EventArgs eventArgs)
         {
@@ -313,16 +291,8 @@ namespace Mapsui.UI.Android
             _canvas.PostInvalidate();
         }
 
-        public void RefreshData()
-        {
-            _map.ViewChanged(true);
-        }
 
-        public void Refresh()
-        {
-            RefreshData();
-            RefreshGraphics();
-        }
+
 
         internal void InvalidateCanvas()
         {

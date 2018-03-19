@@ -20,7 +20,6 @@ namespace Mapsui.Samples.Wpf
         {
             InitializeComponent();
             MapControl.ErrorMessageChanged += MapErrorMessageChanged;
-            MapControl.FeatureInfo += MapControlFeatureInfo;
             MapControl.MouseMove += MapControlOnMouseMove;
             MapControl.RotationLock = true;
             MapControl.UnSnapRotationDegrees = 30;
@@ -154,11 +153,6 @@ namespace Mapsui.Samples.Wpf
             }
 
             return result.ToString();
-        }
-
-        private static void MapControlFeatureInfo(object sender, FeatureInfoEventArgs e)
-        {
-            MessageBox.Show(e.FeatureInfo.ToDisplayText());
         }
 
         private void MapErrorMessageChanged(object sender, EventArgs e)

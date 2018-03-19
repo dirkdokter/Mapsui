@@ -134,30 +134,7 @@ namespace Mapsui.UI.Uwp
 
         public bool ZoomToBoxMode { get; set; }
 
-        public Map Map
-        {
-            get => _map;
-            set
-            {
-                if (_map != null)
-                {
-                    UnsubscribeFromMapEvents(_map);
-                    _map = null;
 
-                }
-
-                _map = value;
-
-                if (_map != null)
-                {
-                    SubscribeToMapEvents(_map);
-
-                    _map.ViewChanged(true);
-                }
-
-                RefreshGraphics();
-            }
-        }
 
         private void MapRefreshGraphics(object o, EventArgs eventArgs)
         {
@@ -243,11 +220,6 @@ namespace Mapsui.UI.Uwp
                 ViewChanged?.Invoke(this, new ViewChangedEventArgs { Viewport = Map.Viewport, UserAction = userAction });
         }
 
-        public void Refresh()
-        {
-            RefreshData();
-            RefreshGraphics();
-        }
 
         public void RefreshGraphics()
         {
@@ -255,10 +227,7 @@ namespace Mapsui.UI.Uwp
             _invalid = true;
         }
 
-        public void RefreshData()
-        {
-            _map.ViewChanged(true);
-        }
+
 
         internal void InvalidateCanvas()
         {
@@ -268,11 +237,7 @@ namespace Mapsui.UI.Uwp
             _renderTarget.InvalidateMeasure();
         }
 
-        public void Clear()
-        {
-            _map?.ClearCache();
-            RefreshGraphics();
-        }
+
 
         public void ZoomIn()
         {

@@ -211,34 +211,8 @@ namespace Mapsui.UI.iOS
             return new Point(point.X * _scale, point.Y * _scale);
         }
 
-        public void Refresh()
-        {
-            RefreshGraphics();
-            RefreshData();
-        }
 
-        public Map Map
-        {
-            get => _map;
-            set
-            {
-                if (_map != null)
-                {
-                    UnsubscribeFromMapEvents(_map);
-                    _map = null;
-                }
 
-                _map = value;
-
-                if (_map != null)
-                {
-                    SubscribeToMapEvents(_map);
-                    _map.ViewChanged(true);
-                }
-
-                RefreshGraphics();
-            }
-        }
 
         private void MapRefreshGraphics(object sender, EventArgs eventArgs)
         {
@@ -301,10 +275,7 @@ namespace Mapsui.UI.iOS
             InvalidateCanvas();
         }
 
-        public void RefreshData()
-        {
-            _map?.ViewChanged(true);
-        }
+
 
         internal void InvalidateCanvas()
         {

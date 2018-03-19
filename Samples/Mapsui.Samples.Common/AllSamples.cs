@@ -21,6 +21,7 @@ namespace Mapsui.Samples.Common
                 ["Stacked labels"] = StackedLabelsSample.CreateMap,
                 ["Symbols"] = SymbolsSample.CreateMap,
                 ["Info"] = InfoLayersSample.CreateMap,
+                ["InteractiveInfo"] = InteractiveInfoLayersSample.CreateMap,
                 ["MbTiles"] = MbTilesSample.CreateMap,
                 ["Keep Within Extents"] = KeepWithinExtentsSample.CreateMap,
                 ["Pen Stroke Cap"] = PenStrokeCapSample.CreateMap,

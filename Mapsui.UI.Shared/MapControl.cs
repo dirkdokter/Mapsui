@@ -265,14 +265,12 @@ namespace Mapsui.UI.Wpf
             {
                 (_previousCenter, _previousRadius, _previousAngle) = GetPinchValues(touchPoints);
                 _mode = TouchMode.Zooming;
-                Console.WriteLine("Switched to zooming");
                 _innerRotation = _map.Viewport.Rotation;
                 _previousTouchStart = null;
             }
             else
             {
                 _mode = TouchMode.Dragging;
-                Console.WriteLine("Switched to dragging");
                 _previousCenter = touchPoints.First();
                 _previousTouchStart = _previousCenter;
             }
@@ -427,7 +425,7 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            var tapWasHandled = Map.InvokeInfo(screenPosition, screenPosition, _scale, _renderer.SymbolCache, WidgetTouched, numOfTaps);
+            var tapWasHandled = Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, numOfTaps, ModifierCtrlPressed, ModifierShiftPressed);
 
             if (!tapWasHandled)
             {
@@ -444,7 +442,7 @@ namespace Mapsui.UI.Wpf
         /// <param name="screenPosition">Clicked/touched position on screen</param>
         private bool OnSingleTapped(Geometries.Point screenPosition, int? timestamp = null)
         {
-            var args = new TappedEventArgs(screenPosition, 1);
+            var args = new TappedEventArgs(screenPosition, 1, ModifierCtrlPressed, ModifierShiftPressed);
 
             if (!_previousTap.IsEmpty() && timestamp != null && _previousTapTime != null)
             {
@@ -471,7 +469,7 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            return Map.InvokeInfo(screenPosition, screenPosition, _scale, _renderer.SymbolCache, WidgetTouched, 1);
+            return Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, 1, ModifierCtrlPressed, ModifierShiftPressed);
         }
 
         /// <summary>

@@ -42,8 +42,11 @@ namespace Mapsui.UI.Wpf
         private Map _map;
         
         private RenderMode _renderMode;
-        private bool _hasBeenManipulated;
         private double _innerRotation;
+
+        private bool ModifierCtrlPressed => (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl));
+        private bool ModifierShiftPressed => (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift));
+
 
         public MapControl()
         {
@@ -96,13 +99,7 @@ namespace Mapsui.UI.Wpf
             };
         }
 
-        private IRenderer _renderer = new MapRenderer();
-
-        public IRenderer Renderer
-        {
-            get => _renderer;
-            set => _renderer = value;
-        }
+        public IRenderer Renderer { get; set; } = new MapRenderer();
 
         private bool IsInBoxZoomMode { get; set; }
 
@@ -345,7 +342,6 @@ namespace Mapsui.UI.Wpf
 
         private void MapControlMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            Console.WriteLine("C");
             if (e.ClickCount > 1)
             {
                 throw new Exception("This should not happen. See https://github.com/pauldendulk/Mapsui/issues/344.");
@@ -543,9 +539,10 @@ namespace Mapsui.UI.Wpf
         private void SKElementOnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
         {
             if (!_invalid) return; // Don't render when nothing has changed
-            if (double.IsNaN(ActualWidth) || ActualWidth == 0 || double.IsNaN(ActualHeight) || ActualHeight == 0) return;
+            if (double.IsNaN(ActualWidth) || ActualWidth == 0 || double.IsNaN(ActualHeight) ||
+                ActualHeight == 0) return;
 
-            e.Surface.Canvas.Scale((float)_scale, (float)_scale);
+            e.Surface.Canvas.Scale((float) _scale, (float) _scale);
 
             Map.Viewport.Width = ActualWidth;
             Map.Viewport.Height = ActualHeight;
@@ -555,6 +552,7 @@ namespace Mapsui.UI.Wpf
 
             _invalid = false;
         }
+
 
         ~MapControl()
         {

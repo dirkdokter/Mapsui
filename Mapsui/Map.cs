@@ -198,7 +198,7 @@ namespace Mapsui
         }
 
         public bool InvokeInfo(Point screenPosition, Point startScreenPosition, float scale, ISymbolCache symbolCache,
-            Action<IWidget, Point> widgetCallback, int numTaps)
+            Action<IWidget, Point> widgetCallback, int numTaps, bool modifierCtrl, bool modifierShift)
         {
             var allWidgets = Layers.Select(l => l.Attribution).Where(a => a != null).Concat(Widgets).ToList();
             
@@ -220,6 +220,9 @@ namespace Mapsui
             {
                 // TODO Info items should be iterated through rather than getting a single item, 
                 // based on Z index and then called until handled = true; Ordered By highest Z
+
+                eventArgs.ModifierCtrl = modifierCtrl;
+                eventArgs.ModifierShift = modifierShift;
 
                 Info?.Invoke(this, eventArgs);
                 return eventArgs.Handled;

@@ -8,10 +8,15 @@ namespace Mapsui.UI
         public int NumOfTaps { get; }
         public bool Handled { get; set; } = false;
 
-        public TappedEventArgs(Geometries.Point screenPosition, int numOfTaps)
+        public bool ModifierCtrl { get; }
+        public bool ModifierShift { get; }
+
+        public TappedEventArgs(Geometries.Point screenPosition, int numOfTaps, bool modifierCtrl = false, bool modifierShift = false)
         {
             ScreenPosition = screenPosition;
             NumOfTaps = numOfTaps;
+            ModifierCtrl = modifierCtrl;
+            ModifierShift = modifierShift;
         }
     }
 }

@@ -28,6 +28,11 @@ namespace Mapsui.UI
         /// </summary>
         public int NumTaps { get; set; }
         /// <summary>
+        /// Modifiers pressed while tapping the location
+        /// </summary>
+        public bool ModifierCtrl { get; set; }
+        public bool ModifierShift { get; set; }
+        /// <summary>
         /// If the interaction was handled by the event subscriber
         /// </summary>
         public bool Handled { get; set; }

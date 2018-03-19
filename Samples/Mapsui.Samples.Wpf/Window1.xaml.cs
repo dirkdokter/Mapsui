@@ -175,8 +175,8 @@ namespace Mapsui.Samples.Wpf
 
         private void MapControlOnInfo(object sender, InfoEventArgs infoEventArgs)
         {
-            if (infoEventArgs.Feature != null)
-                FeatureInfo.Text = $"Click Info:{Environment.NewLine}{infoEventArgs.Feature.ToDisplayText()}";
+            if (infoEventArgs.Feature != null) 
+                FeatureInfo.Text = $"Click Info:{Environment.NewLine}{infoEventArgs.Feature.ToDisplayText()}{Environment.NewLine}CTRL:{infoEventArgs.ModifierCtrl}, SHIFT:{infoEventArgs.ModifierShift}";
         }
     }
 }

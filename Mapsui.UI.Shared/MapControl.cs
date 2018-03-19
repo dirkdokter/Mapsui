@@ -652,5 +652,29 @@ namespace Mapsui.UI.Wpf
                 Math.Abs(currentPosition.X - previousPosition.X) < SystemParameters.MinimumHorizontalDragDistance &&
                 Math.Abs(currentPosition.Y - previousPosition.Y) < SystemParameters.MinimumVerticalDragDistance;
         }
+
+
+        public void Refresh()
+        {
+            RefreshData();
+            RefreshGraphics();
+        }
+
+        public void RefreshGraphics()
+        {
+            InvalidateCanvas();
+            _invalid = true;
+        }
+
+        public void RefreshData()
+        {
+            _map?.ViewChanged(true);
+        }
+
+        public void Clear()
+        {
+            _map?.ClearCache();
+            RefreshGraphics();
+        }
     }
 }

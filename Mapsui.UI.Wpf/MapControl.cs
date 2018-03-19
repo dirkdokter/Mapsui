@@ -60,22 +60,19 @@ namespace Mapsui.UI.Wpf
 
             Loaded += MapControlLoaded;
 
-            //Done
             MouseLeftButtonDown += MapControlMouseLeftButtonDown;
             MouseLeftButtonUp += MapControlMouseLeftButtonUp;
             MouseMove += MapControlMouseMove;
             MouseWheel += MapControlMouseWheel;
 
-            //MouseLeave += MapControlMouseLeave;
+            MouseLeave += MapControlMouseLeave;
             
             SizeChanged += MapControlSizeChanged;
-
 
             ManipulationStarting += MapControlManipulationStarting;
             ManipulationStarted += MapControlManipulationStarted;
             ManipulationDelta += MapControlManipulationDelta;
             ManipulationCompleted += MapControlManipulationCompleted;
-            ManipulationInertiaStarting += MapControlManipulationInertiaStarting;
 
             IsManipulationEnabled = true;
         }
@@ -217,32 +214,9 @@ namespace Mapsui.UI.Wpf
             ViewChanged?.Invoke(this, new ViewChangedEventArgs { Viewport = Map.Viewport, UserAction = userAction });
         }
 
-        public void Refresh()
-        {
-            RefreshData();
-            RefreshGraphics();
-        }
-
-        public void RefreshGraphics()
-        {
-            _invalid = true;
-            InvalidateCanvas();
-        }
-
         internal void InvalidateCanvas()
         {
             Dispatcher.BeginInvoke(new Action(InvalidateVisual));
-        }
-
-        public void RefreshData()
-        {
-            _map.ViewChanged(true);
-        }
-
-        public void Clear()
-        {
-            _map?.ClearCache();
-            RefreshGraphics();
         }
 
 
@@ -259,7 +233,6 @@ namespace Mapsui.UI.Wpf
 
         private void ZoomToResolution(double resolution)
         {
-            //var current = _currentMousePosition;
             var current = Map.Viewport.Center;
 
             Map.Viewport.Transform(current.X, current.Y, current.X, current.Y, Map.Viewport.Resolution / resolution);
@@ -317,7 +290,7 @@ namespace Mapsui.UI.Wpf
 
         private void MapControlMouseLeave(object sender, MouseEventArgs e)
         {
-            //_previousMousePosition = new Point();
+            _mode = TouchMode.None;
             ReleaseMouseCapture();
         }
 
@@ -358,7 +331,6 @@ namespace Mapsui.UI.Wpf
 
         private void MapControlMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            Console.WriteLine("D");
             CaptureMouse();
 
             if (e.ClickCount > 1)
@@ -369,20 +341,6 @@ namespace Mapsui.UI.Wpf
             {
                 OnTouchStart(e.GetPosition(this).ToMapsui());
             }
-
-            /*IsInBoxZoomMode = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
-
-            if (!IsInBoxZoomMode && !ZoomToBoxMode)
-            {
-                if (IsClick(_currentMousePosition, _downMousePosition))
-                {
-                    if (e.ClickCount > 1)
-                    {
-                        OnDoubleTapped(touchPosition.ToMapsui(), e.ClickCount);
-                    }
-                    OnSingleTapped(touchPosition.ToMapsui());
-                }
-            }*/
         }
 
         private void MapControlMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -395,43 +353,7 @@ namespace Mapsui.UI.Wpf
 
             OnTouchEnd(e.GetPosition(this).ToMapsui());
 
-
-            /*if (IsInBoxZoomMode || ZoomToBoxMode)
-            {
-                ZoomToBoxMode = false;
-                var previous = Map.Viewport.ScreenToWorld(_previousMousePosition.X, _previousMousePosition.Y);
-                var current = Map.Viewport.ScreenToWorld(mousePosition);
-                ZoomToBox(previous, current);
-            }
-
-            _map.ViewChanged(true);
-            OnViewChanged(true);
-            _mouseDown = false;
-
-            _previousMousePosition = new Point();*/
             ReleaseMouseCapture();
-        }
-
-
-        private void MapControlTouchUp(object sender, TouchEventArgs e)
-        {
-            //OnTouchEnd(TouchPointHelper.GetPressedPoints(e.GetIntermediateTouchPoints(this)).ToMapsui(),
-            //    TouchPointHelper.GetReleasedPoint(e.GetIntermediateTouchPoints(this)).ToMapsui());
-
-            if (e.TouchDevice.Captured == this) { 
-                ReleaseTouchCapture(e.TouchDevice);
-            }
-            OnTouchEnd(TouchPointHelper.GetPressedPoints(e.GetIntermediateTouchPoints(this)).ToMapsui(),
-                e.GetTouchPoint(this).ToMapsui());
-            Console.WriteLine("B");
-        }
-
-
-        private void MapControlTouchDown(object sender, TouchEventArgs e)
-        {
-            Console.WriteLine("A");
-            e.TouchDevice.Capture(this);
-            OnTouchStart(e.GetTouchPoint(this).ToMapsui());
         }
 
         private void WidgetTouched(Widgets.IWidget widget, Geometries.Point screenPosition)
@@ -440,19 +362,6 @@ namespace Mapsui.UI.Wpf
                 System.Diagnostics.Process.Start(((Widgets.Hyperlink)widget).Url);
 
             widget.HandleWidgetTouched(screenPosition);
-        }
-
-        private void HandleFeatureInfo(MouseButtonEventArgs e)
-        {
-            /*if (FeatureInfo == null) return; // don't fetch if you the call back is not set.
-
-            if (_downMousePosition == e.GetPosition(this))
-                foreach (var layer in Map.Layers)
-                {
-                    // ReSharper disable once SuspiciousTypeConversion.Global
-                    (layer as IFeatureInfo)?.GetFeatureInfo(Map.Viewport, _downMousePosition.X, _downMousePosition.Y,
-                        OnFeatureInfo);
-                }*/
         }
 
         private void OnFeatureInfo(IDictionary<string, IEnumerable<IFeature>> features)
@@ -467,12 +376,6 @@ namespace Mapsui.UI.Wpf
                    && e.RightButton == MouseButtonState.Released;
         }
 
-        //private void MapControlTouchMove(object sender, TouchEventArgs e)
-        //{
-        //    OnTouchMove(TouchPointHelper.GetPressedPoints(e.GetIntermediateTouchPoints(this)).ToMapsui());
-        //}
-
-
         private void MapControlMouseMove(object sender, MouseEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed)
@@ -484,8 +387,6 @@ namespace Mapsui.UI.Wpf
                 OnHovered(e.GetPosition(this).ToMapsui());
             }
         }
-
- 
         private void TryInitializeViewport()
         {
             if (_map.Viewport.Initialized) return;
@@ -524,28 +425,6 @@ namespace Mapsui.UI.Wpf
             Renderer.Render(RenderCanvas, Map.Viewport, _map.Layers, Map.Widgets, _map.BackColor);
 
             _invalid = false;
-        }
-
-        public void ZoomToBox(Geometries.Point beginPoint, Geometries.Point endPoint)
-        {
-            var width = Math.Abs(endPoint.X - beginPoint.X);
-            var height = Math.Abs(endPoint.Y - beginPoint.Y);
-            if (width <= 0) return;
-            if (height <= 0) return;
-
-            ZoomHelper.ZoomToBoudingbox(beginPoint.X, beginPoint.Y, endPoint.X, endPoint.Y,
-                ActualWidth, ActualHeight, out var x, out var y, out var resolution);
-
-            resolution = ViewportLimiter.LimitResolution(resolution, _map.Viewport.Width, _map.Viewport.Height,
-                _map.ZoomMode, _map.ZoomLimits, _map.Resolutions, _map.Envelope);
-
-            _map.Viewport.Resolution = resolution;
-            Map.Viewport.Center = new Geometries.Point(x, y);
-
-            _map.ViewChanged(true);
-            OnViewChanged(true);
-            RefreshGraphics();
-            ClearBBoxDrawing();
         }
 
         private void ClearBBoxDrawing()
@@ -590,13 +469,6 @@ namespace Mapsui.UI.Wpf
             if (ActualWidth.IsNanOrZero()) return;
             Map.Viewport.Resolution = Math.Max(Map.Envelope.Width / ActualWidth, Map.Envelope.Height / ActualHeight);
             Map.Viewport.Center = Map.Envelope.GetCentroid();
-        }
-
-        private static void MapControlManipulationInertiaStarting(object sender, ManipulationInertiaStartingEventArgs e)
-        {
-            e.TranslationBehavior.DesiredDeceleration = 25 * 96.0 / (1000.0 * 1000.0);
-            //e.TranslationBehavior.DesiredDeceleration = 1000;
-            e.Handled = true;
         }
 
         private void MapControlManipulationStarting(object sender, ManipulationStartingEventArgs e)

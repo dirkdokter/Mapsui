@@ -14,7 +14,7 @@ namespace Mapsui.Samples.Common.Maps
         public static ILayer CreateLayer()
         {
             return new TileLayer(() => TmsTileSourceBuilder.Build(
-                "https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopo@EPSG%3A28992 ", true))
+                "https://geodata.nationaalgeoregister.nl/tiles/service/tms/1.0.0/opentopo/EPSG:28992 ", true))
             {
                 Name = "Open Topo (PDOK)"
             };

@@ -11,7 +11,8 @@
         Width="1000"
         Height="800"
         Title="Mapsui.Samples.Wpf"
-        SizeToContent="Manual">
+        SizeToContent="Manual"
+        WindowState="Maximized">
         <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <DockPanel >
                 <Border BorderBrush="White" Opacity="0.65" Background="White" BorderThickness="6" MinWidth="140"

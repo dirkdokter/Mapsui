@@ -244,15 +244,15 @@ namespace Mapsui.UI.Wpf
                 }
             }
         }
+        
 
-
-        private void WidgetTouched(Widgets.IWidget widget, Geometries.Point screenPosition)
+        /*private void WidgetTouched(Widgets.IWidget widget, Geometries.Point screenPosition)
         {
             if (widget is Widgets.Hyperlink)
                 System.Diagnostics.Process.Start(((Widgets.Hyperlink)widget).Url);
 
             widget.HandleWidgetTouched(screenPosition);
-        }
+        }*/
 
 
 

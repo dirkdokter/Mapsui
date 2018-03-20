@@ -211,9 +211,10 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            var hoverHandled = Map.InvokeHover(screenPosition, _scale, Renderer.SymbolCache);
+            //var hoverHandled = Map.InvokeHover(screenPosition, _scale, Renderer.SymbolCache);
 
-            return hoverHandled;
+            //return hoverHandled;
+            return false; // TODO
         }
 
         /// <summary>
@@ -427,9 +428,11 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            var tapWasHandled = Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, numOfTaps, ModifierCtrlPressed, ModifierShiftPressed);
+            // TODO
+            //var tapWasHandled = Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, numOfTaps, ModifierCtrlPressed, ModifierShiftPressed);
 
-            if (!tapWasHandled)
+            //if (!tapWasHandled)
+            if (true) // TODO
             {
                 // Double tap as zoom
                 return OnZoomIn(screenPosition);
@@ -471,7 +474,8 @@ namespace Mapsui.UI.Wpf
             if (args.Handled)
                 return true;
 
-            return Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, 1, ModifierCtrlPressed, ModifierShiftPressed);
+            //return Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, 1, ModifierCtrlPressed, ModifierShiftPressed);
+            return false; // TODO
         }
 
         /// <summary>

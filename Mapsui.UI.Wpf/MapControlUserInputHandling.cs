@@ -93,7 +93,7 @@ namespace Mapsui.UI.Wpf
 
 
         /// 
-        /// Mouse wheen
+        /// Mouse wheel
         /// 
         private void MapControlMouseWheel(object sender, MouseWheelEventArgs e)
         {

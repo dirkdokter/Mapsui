@@ -2,14 +2,14 @@
 
 namespace Mapsui.UI
 {
-    public class HoveredEventArgs : EventArgs
+    public class HoveredEventArgs : BaseUiEventArgs
     {
         public Geometries.Point ScreenPosition { get; }
-        public bool Handled { get; set; } = false;
 
-        public HoveredEventArgs(Geometries.Point screenPosition)
+        public HoveredEventArgs(Geometries.Point screenPosition, Viewport viewport = null)
         {
             ScreenPosition = screenPosition;
+            Viewport = viewport;
         }
     }
 }

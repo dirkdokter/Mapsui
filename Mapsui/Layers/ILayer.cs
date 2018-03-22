@@ -22,6 +22,7 @@ using Mapsui.Geometries;
 using Mapsui.Projection;
 using Mapsui.Providers;
 using Mapsui.Styles;
+using Mapsui.UI;
 using Mapsui.Widgets;
 
 namespace Mapsui.Layers
@@ -29,7 +30,7 @@ namespace Mapsui.Layers
     /// <summary>
     /// Interface for map layers
     /// </summary>
-    public interface ILayer : IAsyncDataFetcher, INotifyPropertyChanged 
+    public interface ILayer : IAsyncDataFetcher, INotifyPropertyChanged, IUiEventReceiver
     {
         int Id { get; }
 
@@ -99,5 +100,7 @@ namespace Mapsui.Layers
         Hyperlink Attribution { get; }
 
         IReadOnlyList<double> Resolutions { get; }
+
+        bool IsVisibleOnViewport(IViewport viewport);
     }
 }

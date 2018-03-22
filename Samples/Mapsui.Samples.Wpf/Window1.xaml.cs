@@ -20,7 +20,7 @@ namespace Mapsui.Samples.Wpf
         {
             InitializeComponent();
             MapControl.ErrorMessageChanged += MapErrorMessageChanged;
-            MapControl.MouseMove += MapControlOnMouseMove;
+            MapControl.Hovered += MapControlOnMouseMove;
             MapControl.RotationLock = true;
             MapControl.UnSnapRotationDegrees = 30;
             MapControl.ReSnapRotationDegrees = 5;
@@ -53,9 +53,9 @@ namespace Mapsui.Samples.Wpf
                 throw new Exception("Unknown ComboBox item");
         }
 
-        private void MapControlOnMouseMove(object sender, MouseEventArgs e)
+        private void MapControlOnMouseMove(object sender, HoveredEventArgs e)
         {
-            var screenPosition = e.GetPosition(MapControl);
+            var screenPosition = e.ScreenPosition;
             var worldPosition = MapControl.Map.Viewport.ScreenToWorld(screenPosition.X, screenPosition.Y);
             MouseCoordinates.Text = $"{worldPosition.X:F0}, {worldPosition.Y:F0}";
         }

@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace Mapsui.UI
 {
-    public class TouchedEventArgs : EventArgs
+    public class TouchedEventArgs : BaseUiEventArgs
     {
         public List<Geometries.Point> ScreenPoints { get; }
-        public bool Handled { get; set; } = false;
         public int? Timestamp { get; set; }
 
-        public TouchedEventArgs(List<Geometries.Point> screenPoints, int? timestamp = null)
+        public TouchedEventArgs(List<Geometries.Point> screenPoints, int? timestamp = null, Viewport viewport = null)
         {
             ScreenPoints = screenPoints;
             Timestamp = timestamp;
+            Viewport = viewport;
         }
     }
 }

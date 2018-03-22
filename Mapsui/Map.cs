@@ -50,7 +50,7 @@ namespace Mapsui
         }
 
         public List<IWidget> Widgets { get; } = new List<IWidget>();
-
+        public List<IWidget> WidgetsAndAttributions => Layers.Select(l => l.Attribution).Where(a => a != null).Concat(Widgets).ToList();
         public PanMode PanMode { get; set; } = PanMode.KeepCenterWithinExtents;
 
         public ZoomMode ZoomMode { get; set; } = ZoomMode.KeepWithinResolutions;

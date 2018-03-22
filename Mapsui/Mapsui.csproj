@@ -38,6 +38,7 @@
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
     <None Include="packages.config" />
+    <None Include="UI\UiEvents.csv" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ExtensionMethods\BoundingBoxExtensions.cs" />
@@ -67,6 +68,17 @@
     <Compile Include="Layers\AnimatedPointLayer.cs" />
     <Compile Include="Styles\StrokeJoin.cs" />
     <Compile Include="Styles\PenStrokeCap.cs" />
+    <Compile Include="UI\EventArgs\BaseUiEventArgs.cs" />
+    <Compile Include="UI\EventArgs\HoveredEventArgs.cs" />
+    <Compile Include="UI\EventArgs\SwipedEventArgs.cs" />
+    <Compile Include="UI\EventArgs\TappedEventArgs.cs" />
+    <Compile Include="UI\EventArgs\TouchedEventArgs.cs" />
+    <Compile Include="UI\EventArgs\ZoomedEventArgs.cs" />
+    <Compile Include="UI\GeneratedUiEventReceiver.generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GeneratedUiEventReceiver.tt</DependentUpon>
+    </Compile>
     <Compile Include="Widgets\Alignment.cs" />
     <Compile Include="Widgets\Hyperlink.cs" />
     <Compile Include="Widgets\IWidget.cs" />
@@ -206,6 +218,15 @@
       <Project>{EE55B62D-FFA2-4C24-A4AD-7A47ACE55CE5}</Project>
       <Name>Mapsui.Geometries</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="UI\GeneratedUiEventReceiver.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>GeneratedUiEventReceiver.generated.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
 using Mapsui.Geometries;
 using Mapsui.Styles;
+using Mapsui.UI;
 
 namespace Mapsui.Providers
 {
-    public interface IFeature
+    public interface IFeature: IUiEventReceiver
     {
         IGeometry Geometry { get; set; }
         IDictionary<IStyle, object> RenderedGeometry { get; }

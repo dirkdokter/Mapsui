@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Mapsui.Geometries;
 using Mapsui.Styles;
+using Mapsui.UI;
 
 namespace Mapsui.Providers
 {
-    public class Feature : IFeature, IDisposable
+    public class Feature : DefaultUiEventReceiver, IFeature, IDisposable
     {
         private readonly Dictionary<string, object> _dictionary = new Dictionary<string, object>();
         private bool _disposed;

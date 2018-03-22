@@ -15,10 +15,7 @@ namespace Mapsui.Rendering
         {
             foreach (var layer in layers)
             {
-                if (layer.Enabled == false) continue;
-                if (layer.MinVisible > viewport.Resolution) continue;
-                if (layer.MaxVisible < viewport.Resolution) continue;
-
+				if (!layer.IsVisibleOnViewport(viewport)) continue;
                 IterateLayer(viewport, layer, callback);
             }
         }

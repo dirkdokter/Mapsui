@@ -1,0 +1,10 @@
+﻿Hovered;HoveredEventArgs
+HoverStopped;HoveredEventArgs
+TouchStarted;TouchedEventArgs 
+TouchEnded;TouchedEventArgs 
+TouchMove;TouchedEventArgs 
+Swipe;SwipedEventArgs
+Fling;SwipedEventArgs
+SingleTap;TappedEventArgs 
+DoubleTap;TappedEventArgs
+LongTap;TappedEventArgs

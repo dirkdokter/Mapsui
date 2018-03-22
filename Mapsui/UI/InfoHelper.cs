@@ -52,7 +52,7 @@ namespace Mapsui.UI
             return new InfoEventArgs { WorldPosition = worldPosition, ScreenPosition = screenPosition, NumTaps = numTaps, Handled = false};
         }
 
-        private static bool IsTouchingTakingIntoAccountSymbolStyles(
+        public static bool IsTouchingTakingIntoAccountSymbolStyles(
             Point point, IFeature feature, IStyle layerStyle, double resolution, ISymbolCache symbolCache)
         {
             var styles = new List<IStyle>();

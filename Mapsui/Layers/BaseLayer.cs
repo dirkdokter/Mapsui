@@ -6,11 +6,12 @@ using Mapsui.Geometries;
 using Mapsui.Projection;
 using Mapsui.Providers;
 using Mapsui.Styles;
+using Mapsui.UI;
 using Mapsui.Widgets;
 
 namespace Mapsui.Layers
 {
-    public abstract class BaseLayer : ILayer
+    public abstract class BaseLayer : DefaultUiEventReceiver, ILayer
     {
         private static int _instanceCounter;
         private bool _busy;
@@ -235,5 +236,11 @@ namespace Mapsui.Layers
         public Hyperlink Attribution { get; set; }
 
         public virtual IReadOnlyList<double> Resolutions { get; } = new List<double>();
+        public bool IsVisibleOnViewport(IViewport viewport)
+        {
+            return (Enabled == true)
+                    && (MinVisible < viewport.Resolution)
+                    && (MaxVisible > viewport.Resolution);
+        }
     }
 }

@@ -2,11 +2,10 @@
 
 namespace Mapsui.UI
 {
-    public class SwipedEventArgs : EventArgs
+    public class SwipedEventArgs : BaseUiEventArgs
     {
         public double VelocityX { get; } // Velocity in pixel/second
         public double  VelocityY { get; } // Velocity in pixel/second
-        public bool Handled { get; set; } = false;
 
         public SwipedEventArgs(double velocityX, double velocityY)
         {

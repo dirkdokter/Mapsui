@@ -35,7 +35,7 @@ namespace Mapsui.Samples.Common.Maps
 
         private static ILayer CreatePolygonLayer()
         {
-            var features = new Features { CreatePolygonFeature(), CreateMultiPolygonFeature() };
+            var features = new Features { CreatePolygonFeature(), CreateMultiPolygonFeature(), CreatePolygonFeatureWithEventHandlers() };
             var provider = new MemoryProvider(features);
 
             var layer = new MemoryLayer
@@ -77,6 +77,21 @@ namespace Mapsui.Samples.Common.Maps
                 ["Name"] = "Polygon 1"
             };
             feature.Styles.Add(new VectorStyle());
+            return feature;
+        }
+
+        private static Feature CreatePolygonFeatureWithEventHandlers()
+        {
+            var feature = new Feature
+            {
+                Geometry = CreateAlternativePolygon(),
+                ["Name"] = "Polygon with feature event handlers"
+            };
+            feature.Styles.Add(new VectorStyle() { Fill = new Brush(Color.Blue), Outline = new Pen(Color.Red) });
+            feature.Hovered += (sender, args) => {
+                feature.Styles.First().Opacity = 0.4f;
+                args.MapNeedsRefresh = true;
+            }; 
             return feature;
         }
 
@@ -126,6 +141,18 @@ namespace Mapsui.Samples.Common.Maps
                 new Point(-1000000, -1000000),
                 new Point(-1000000, 1000000),
                 new Point(1000000, 1000000)
+            }));
+        }
+
+        private static Polygon CreateAlternativePolygon()
+        {
+            return new Polygon(new LinearRing(new[]
+            {
+                new Point(3000000, 1000000),
+                new Point(3000000, -1000000),
+                new Point(2000000, -1000000),
+                new Point(2000000, 1000000),
+                new Point(3000000, 1000000)
             }));
         }
 

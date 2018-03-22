@@ -206,15 +206,51 @@ namespace Mapsui.UI.Wpf
         {
             var args = new HoveredEventArgs(screenPosition);
 
-            Hovered?.Invoke(this, args);
+            // First try the event handlers on the map control itself. They take priority over all other events.
+            Hovered?.Invoke(this, args); 
 
             if (args.Handled)
                 return true;
 
-            //var hoverHandled = Map.InvokeHover(screenPosition, _scale, Renderer.SymbolCache);
+            InvokeHoverEvent(args);
 
-            //return hoverHandled;
-            return false; // TODO
+            if (args.MapNeedsRefresh)
+                RefreshGraphics();
+
+            return args.Handled;
+        }
+
+        public void InvokeHoverEvent(HoveredEventArgs args)
+        {
+            // TODO: handle widgets
+
+            // First iterate over the layers (in z-order). 
+            // Per layer, check which features are under the mouse.
+            // Then send the event to the feature.
+            // If the feature does not handle the event, pass the event to the layer.
+            // (or: even if the feature handles the event, pass the event to the layer, but set some HandledBy property)
+
+            var reversedLayer = Map.Layers.Reverse();
+            foreach (var layer in reversedLayer)
+            {
+                if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
+                var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
+                foreach (var feature in featuresInView)
+                {
+                    // Check if the mouse is above the feature
+                    bool touchingFeature = InfoHelper.IsTouchingTakingIntoAccountSymbolStyles(
+                        ScreenToWorld(args.ScreenPosition), feature, layer.Style, Map.Viewport.Resolution,
+                        Renderer.SymbolCache);
+
+                    if (!touchingFeature) continue;
+
+                    feature.OnHovered(args);
+                    if (args.Handled) return;
+                }
+
+                layer.OnHovered(args);
+            }
+            return;
         }
 
         /// <summary>

@@ -48,3 +48,6 @@ project.lock.json
 /Tools/VersionUpdater.exe.config
 /Tools/VersionUpdater.exe
 /Mapsui.UI.Forms/Images/Pin.svg.bak
+
+*.Generated.cs
+*.generated.cs

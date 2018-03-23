@@ -54,6 +54,13 @@ namespace Mapsui.Samples.Common.Maps
                     args.Handled = true;
             };
 
+            // Just an example to show how to simply disable panning when the mouse/finger is on a feature on this layer
+            layer.TouchStarted += (sender, args) =>
+            {
+                if (args.Feature != null)
+                    args.Handled = true;
+            };
+
             return layer;
         }
 

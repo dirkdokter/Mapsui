@@ -56,6 +56,7 @@ namespace Mapsui.UI.Wpf
         /// Saver for the previous touch start (left mouse down/finger/pen) position 
         /// </summary>
         private Geometries.Point _previousTouchStart = new Geometries.Point();
+        private IUiEventReceiver _touchHandlingObject = null;
 
         /// <summary>
         /// Saver for the previous single tap position 
@@ -246,6 +247,8 @@ namespace Mapsui.UI.Wpf
             {
                 if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
                 var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
+                args.Layer = layer;
+                args.Feature = null;
                 foreach (var feature in featuresInView)
                 {
                     // Check if the mouse is above the feature
@@ -337,14 +340,54 @@ namespace Mapsui.UI.Wpf
                 _mode = TouchMode.Zooming;
                 _innerRotation = _map.Viewport.Rotation;
                 _previousTouchStart = null;
+                _touchHandlingObject = null; // Only the MapControl can handle multi-touch for now.
             }
             else
             {
                 _mode = TouchMode.Dragging;
                 _previousCenter = touchPoints.First();
                 _previousTouchStart = _previousCenter;
-            }
+                _touchHandlingObject = null; // By default, let the MapControl handle the drag/touch
 
+                // TODO: handle widgets
+
+                // First iterate over the layers
+                var reversedLayer = Map.Layers.Reverse();
+                foreach (var layer in reversedLayer)
+                {
+                    if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
+                    var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
+                    args.Layer = layer;
+                    args.Feature = null;
+                    foreach (var feature in featuresInView)
+                    {
+                        // Check if the mouse is above the feature
+                        bool mouseIsTouchingFeature = InfoHelper.IsTouchingTakingIntoAccountSymbolStyles(
+                            ScreenToWorld(touchPoints.First()), feature, layer.Style, Map.Viewport.Resolution,
+                            Renderer.SymbolCache);
+
+                        if (!mouseIsTouchingFeature) continue;
+
+                        args.Layer = layer;
+                        args.Feature = feature;
+
+                        // Check if the feature wants to handle this touch/drag action
+                        feature.OnTouchStarted(args);
+                        if (args.Handled)
+                        {
+                            _touchHandlingObject = feature;
+                            return true;
+                        }
+                    }
+                    // If no feature wants to handle it, maybe the layer wants to handle it
+                    layer.OnTouchStarted(args);
+                    if (args.Handled)
+                    {
+                        _touchHandlingObject = layer;
+                        return true;
+                    };
+                }
+            }
             return true;
         }
 
@@ -378,10 +421,18 @@ namespace Mapsui.UI.Wpf
                     return OnSingleTapped(releasedPoint, timestamp);
                 }
 
-                _invalid = true;
-                OnViewChanged(true);
-                RefreshGraphics();
-                InvalidateCanvas();
+                if (_touchHandlingObject == null)
+                {
+                    _invalid = true;
+                    OnViewChanged(true);
+                    RefreshGraphics();
+                    InvalidateCanvas();
+                }
+                else
+                {
+                    if (args.MapNeedsRefresh)
+                        RefreshGraphics();
+                }
 
                 _mode = TouchMode.None;
                 _map.ViewChanged(true);
@@ -447,11 +498,19 @@ namespace Mapsui.UI.Wpf
 
                         if (_previousCenter != null && !_previousCenter.IsEmpty())
                         {
-                            _map.Viewport.Transform(touchPosition.X, touchPosition.Y, _previousCenter.X, _previousCenter.Y);
-
-                            ViewportLimiter.LimitExtent(_map.Viewport, _map.PanMode, _map.PanLimits, _map.Envelope);
-
-                            RefreshGraphics();
+                            if (_touchHandlingObject == null) // MapControl is handling the dragging
+                            {
+                                _map.Viewport.Transform(touchPosition.X, touchPosition.Y, _previousCenter.X,
+                                    _previousCenter.Y);
+                                ViewportLimiter.LimitExtent(_map.Viewport, _map.PanMode, _map.PanLimits, _map.Envelope);
+                                RefreshGraphics();
+                            }
+                            else
+                            {
+                                _touchHandlingObject.OnTouchMove(args); // Someone else (layer/feature) is handling the dragging.
+                                if (args.MapNeedsRefresh)
+                                    RefreshGraphics();
+                            }
                         }
 
                         _previousCenter = touchPosition;
@@ -460,6 +519,9 @@ namespace Mapsui.UI.Wpf
                 case TouchMode.Zooming:
                     {
                         if (Double.IsNaN(args.Radius) || Double.IsNaN(args.Angle) || args.Center.IsEmpty())
+                            return false;
+
+                        if (_touchHandlingObject != null) // Multi-touch only supported for MapControl for now.
                             return false;
 
                         var (prevCenter, prevRadius, prevAngle) = (_previousCenter, _previousRadius, _previousAngle);
@@ -599,6 +661,8 @@ namespace Mapsui.UI.Wpf
             {
                 if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
                 var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
+                args.Layer = layer;
+                args.Feature = null;
                 foreach (var feature in featuresInView)
                 {
                     // Check if the mouse is above the feature
@@ -778,7 +842,6 @@ namespace Mapsui.UI.Wpf
             }
         }
 
-
         private void DefaultZoomedHandler(ZoomedEventArgs e)
         {
             if (!_map.Viewport.Initialized) return;
@@ -814,7 +877,6 @@ namespace Mapsui.UI.Wpf
                 Math.Abs(currentPosition.Y - previousPosition.Y) < MinimumDragDistance;
         }
 
-
         public void Refresh()
         {
             RefreshData();
@@ -837,10 +899,6 @@ namespace Mapsui.UI.Wpf
             _map?.ClearCache();
             RefreshGraphics();
         }
-
-
-
-
 
         public Map Map
         {

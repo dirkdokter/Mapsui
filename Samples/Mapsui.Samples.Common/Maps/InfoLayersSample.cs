@@ -252,6 +252,24 @@ namespace Mapsui.Samples.Common.Maps
                 }
             };
 
+             IFeature _tmpFeature = null;
+            layer.TouchStarted += (sender, args) =>
+            {
+                if (args.Feature != null)
+                {
+                    args.Handled = true;
+                    _tmpFeature = args.Feature;
+                }
+            };
+
+            layer.TouchMove += (sender, args) =>
+            {
+                if (_tmpFeature != null)
+                {
+                    (_tmpFeature.Geometry as Point).X = args.ScreenPoints.First().X;
+                }
+            };
+
             return layer;
         }
 

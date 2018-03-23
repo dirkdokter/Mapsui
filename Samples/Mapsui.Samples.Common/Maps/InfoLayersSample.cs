@@ -266,7 +266,8 @@ namespace Mapsui.Samples.Common.Maps
             {
                 if (_tmpFeature != null)
                 {
-                    (_tmpFeature.Geometry as Point).X = args.ScreenPoints.First().X;
+                    _tmpFeature.Geometry = args.Viewport.ScreenToWorld(args.ScreenPoints.First());
+                    args.MapNeedsRefresh = true;
                 }
             };
 

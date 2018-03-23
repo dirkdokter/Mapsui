@@ -423,7 +423,6 @@ namespace Mapsui.UI.Wpf
                     _invalid = true;
                     OnViewChanged(true);
                     RefreshGraphics();
-                    InvalidateCanvas();
                 }
                 else
                 {

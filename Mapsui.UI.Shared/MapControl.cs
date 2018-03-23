@@ -558,7 +558,7 @@ namespace Mapsui.UI.Wpf
             return args.Handled;
         }
 
-        public void InvokeTappedEvents(TappedEventArgs args)
+        private void InvokeTappedEvents(TappedEventArgs args)
         {
             if (args.NumOfTaps < 1)
             {

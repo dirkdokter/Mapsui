@@ -7,7 +7,6 @@ namespace Mapsui.UI
     {
         public List<Geometries.Point> ScreenPoints { get; }
         public int? Timestamp { get; set; }
-
         public TouchedEventArgs(List<Geometries.Point> screenPoints, int? timestamp = null, Viewport viewport = null)
         {
             ScreenPoints = screenPoints;

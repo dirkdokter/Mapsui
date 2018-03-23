@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using Mapsui.Utilities;
 using Mapsui.Layers;
+using Mapsui.Providers;
 using Point = Mapsui.Geometries.Point;
 
 #if __ANDROID__
@@ -42,6 +43,16 @@ namespace Mapsui.UI.Wpf
         private Geometries.Point _previousCenter = new Geometries.Point();
 
         /// <summary>
+        /// Saver for angle before last pinch movement
+        /// </summary>
+        private double _previousAngle;
+
+        /// <summary>
+        /// Saver for radius before last pinch movement
+        /// </summary>
+        private double _previousRadius = 1f;
+
+        /// <summary>
         /// Saver for the previous touch start (left mouse down/finger/pen) position 
         /// </summary>
         private Geometries.Point _previousTouchStart = new Geometries.Point();
@@ -57,14 +68,9 @@ namespace Mapsui.UI.Wpf
         private int? _previousTapTime;
 
         /// <summary>
-        /// Saver for angle before last pinch movement
+        /// Saver for the previous hover object
         /// </summary>
-        private double _previousAngle;
-
-        /// <summary>
-        /// Saver for radius before last pinch movement
-        /// </summary>
-        private double _previousRadius = 1f;
+        private IUiEventReceiver _previousHoverObject = null;
 
         /// <summary>
         /// Events
@@ -127,6 +133,7 @@ namespace Mapsui.UI.Wpf
         /// Zoom is called, when map should be zoomed
         /// </summary>
         public event EventHandler<ZoomedEventArgs> Zoomed;
+
 
         /// <summary>
         /// Properties
@@ -204,15 +211,18 @@ namespace Mapsui.UI.Wpf
         /// <param name="screenPosition">Actual position of mouse/finger/pen</param>
         private bool OnHovered(Geometries.Point screenPosition)
         {
-            var args = new HoveredEventArgs(screenPosition);
+            var args = new HoveredEventArgs(screenPosition, Map.Viewport, ModifierCtrlPressed, ModifierShiftPressed);
 
             // First try the event handlers on the map control itself. They take priority over all other events.
-            Hovered?.Invoke(this, args); 
+            Hovered?.Invoke(this, args);
+
+            // Then try the old Map.InvokeHover method, for backward compatibility
+            Map.InvokeHover(screenPosition, _scale, Renderer.SymbolCache);
 
             if (args.Handled)
                 return true;
 
-            InvokeHoverEvent(args);
+            InvokeHoverEvents(args);
 
             if (args.MapNeedsRefresh)
                 RefreshGraphics();
@@ -220,7 +230,7 @@ namespace Mapsui.UI.Wpf
             return args.Handled;
         }
 
-        public void InvokeHoverEvent(HoveredEventArgs args)
+        public void InvokeHoverEvents(HoveredEventArgs args)
         {
             // TODO: handle widgets
 
@@ -228,7 +238,7 @@ namespace Mapsui.UI.Wpf
             // Per layer, check which features are under the mouse.
             // Then send the event to the feature.
             // If the feature does not handle the event, pass the event to the layer.
-            // (or: even if the feature handles the event, pass the event to the layer, but set some HandledBy property)
+            // (or: even if the feature handles the event, pass the event to the layer, but set some HandledBy property?)
 
             var reversedLayer = Map.Layers.Reverse();
             foreach (var layer in reversedLayer)
@@ -238,20 +248,40 @@ namespace Mapsui.UI.Wpf
                 foreach (var feature in featuresInView)
                 {
                     // Check if the mouse is above the feature
-                    bool touchingFeature = InfoHelper.IsTouchingTakingIntoAccountSymbolStyles(
+                    bool mouseIsTouchingFeature = InfoHelper.IsTouchingTakingIntoAccountSymbolStyles(
                         ScreenToWorld(args.ScreenPosition), feature, layer.Style, Map.Viewport.Resolution,
                         Renderer.SymbolCache);
 
-                    if (!touchingFeature) continue;
+                    if (!mouseIsTouchingFeature) continue;
 
+                    args.Layer = layer;
+                    args.Feature = feature;
+
+                    if (feature != _previousHoverObject)
+                    {
+                        _previousHoverObject?.OnHoverStopped(args);
+                        args.Handled = false;
+                        feature.OnHoveredOnce(args);
+                    }
+                    _previousHoverObject = feature;
+                    if (args.Handled) return;
                     feature.OnHovered(args);
                     if (args.Handled) return;
-                }
 
+                }
+                if (layer != _previousHoverObject)
+                {
+                    _previousHoverObject?.OnHoverStopped(args);
+                    args.Handled = false;
+                    layer.OnHoveredOnce(args);
+                }
+                _previousHoverObject = layer;
+                if (args.Handled) return;
                 layer.OnHovered(args);
+                if (args.Handled) return;
             }
-            return;
         }
+
 
         /// <summary>
         /// Called, when mouse/finger/pen swiped over map
@@ -457,7 +487,7 @@ namespace Mapsui.UI.Wpf
             // Cancel the dragging mode that was set by the first (single) tap.
             _mode = TouchMode.None; 
 
-            var args = new TappedEventArgs(screenPosition, numOfTaps);
+            var args = new TappedEventArgs(screenPosition, numOfTaps, ModifierCtrlPressed, ModifierShiftPressed, Map.Viewport);
 
             DoubleTap?.Invoke(this, args);
 
@@ -467,14 +497,16 @@ namespace Mapsui.UI.Wpf
             // TODO
             //var tapWasHandled = Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, numOfTaps, ModifierCtrlPressed, ModifierShiftPressed);
 
-            //if (!tapWasHandled)
-            if (true) // TODO
-            {
-                // Double tap as zoom
-                return OnZoomIn(screenPosition);
-            }
+            InvokeTappedEvents(args);
 
-            return false;
+            if (args.MapNeedsRefresh)
+                RefreshGraphics();
+
+            if (args.Handled)
+                return true;
+
+            // By default, zoom in on double tap
+            return OnZoomIn(screenPosition);
         }
 
         /// <summary>
@@ -483,7 +515,7 @@ namespace Mapsui.UI.Wpf
         /// <param name="screenPosition">Clicked/touched position on screen</param>
         private bool OnSingleTapped(Geometries.Point screenPosition, int? timestamp = null)
         {
-            var args = new TappedEventArgs(screenPosition, 1, ModifierCtrlPressed, ModifierShiftPressed);
+            var args = new TappedEventArgs(screenPosition, 1, ModifierCtrlPressed, ModifierShiftPressed, Map.Viewport);
 
             if (!_previousTap.IsEmpty() && timestamp != null && _previousTapTime != null)
             {
@@ -505,13 +537,76 @@ namespace Mapsui.UI.Wpf
 
             _previousTap = screenPosition;
             _previousTapTime = timestamp;
+
+            // First try the event handlers on the MapControl itself
             SingleTap?.Invoke(this, args);
 
             if (args.Handled)
                 return true;
 
-            //return Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, WidgetTouched, 1, ModifierCtrlPressed, ModifierShiftPressed);
-            return false; // TODO
+            // Then try the old Map.InvokeInfo method, for backwards compatibility
+            Map.InvokeInfo(screenPosition, screenPosition, _scale, Renderer.SymbolCache, null, 1, ModifierCtrlPressed, ModifierShiftPressed);
+
+            if (args.Handled)
+                return true;
+
+            InvokeTappedEvents(args);
+
+            if (args.MapNeedsRefresh)
+                RefreshGraphics();
+
+            return args.Handled;
+        }
+
+        public void InvokeTappedEvents(TappedEventArgs args)
+        {
+            if (args.NumOfTaps < 1)
+            {
+                throw new ArgumentException();
+            }
+
+            // TODO: handle widgets
+
+            // First iterate over the layers
+            var reversedLayer = Map.Layers.Reverse();
+            foreach (var layer in reversedLayer)
+            {
+                if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
+                var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
+                foreach (var feature in featuresInView)
+                {
+                    // Check if the mouse is above the feature
+                    bool mouseIsTouchingFeature = InfoHelper.IsTouchingTakingIntoAccountSymbolStyles(
+                        ScreenToWorld(args.ScreenPosition), feature, layer.Style, Map.Viewport.Resolution,
+                        Renderer.SymbolCache);
+
+                    if (!mouseIsTouchingFeature) continue;
+
+                    args.Layer = layer;
+                    args.Feature = feature;
+
+                    if (args.NumOfTaps < 2)
+                    {
+                        feature.OnSingleTap(args);
+                    }
+                    else
+                    {
+                        feature.OnDoubleTap(args);
+                    }
+                    if (args.Handled) return;
+
+                }
+
+                if (args.NumOfTaps < 2)
+                {
+                    layer.OnSingleTap(args);
+                }
+                else
+                {
+                    layer.OnDoubleTap(args);
+                }
+                if (args.Handled) return;
+            }
         }
 
         /// <summary>

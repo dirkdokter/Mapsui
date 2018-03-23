@@ -21,9 +21,10 @@ namespace Mapsui.UI
 			string argsType = keyValue[1].Trim();
 #>
         public event EventHandler<<#=argsType#>> <#=eventName#>;
-        public void On<#=eventName#>(<#=argsType#> e)
+        public bool On<#=eventName#>(<#=argsType#> e)
         {
             <#=eventName#>?.Invoke(this, e);
+			return e.Handled;
         }
 <#
 		}
@@ -42,7 +43,7 @@ namespace Mapsui.UI
 			string argsType = keyValue[1].Trim();
 #>
         event EventHandler<<#=argsType#>> <#=eventName#>;
-        void On<#=eventName#>(<#=argsType#> e);
+        bool On<#=eventName#>(<#=argsType#> e);
 
 <#
 		}

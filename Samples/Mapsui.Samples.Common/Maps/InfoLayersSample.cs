@@ -11,7 +11,8 @@ namespace Mapsui.Samples.Common.Maps
     public static class InfoLayersSample
     {
         private const string InfoLayerName = "Info Layer";
-        private const string HoverLayerName = "Hover Layer";
+        private const string HoverLayerName = "Hover Layer (Info events)";
+        private const string HoverEventLayerName = "Hover Layer (Layer events)";
         private const string PolygonLayerName = "Polygon Layer";
         private const string LineLayerName = "Line Layer";
 
@@ -24,6 +25,7 @@ namespace Mapsui.Samples.Common.Maps
             map.Layers.Add(CreateHoverLayer(map.Envelope));
             map.Layers.Add(CreatePolygonLayer());
             map.Layers.Add(CreateLineLayer());
+            map.Layers.Add(CreateHoverEventLayer(map.Envelope));
 
             map.InfoLayers.Add(map.Layers.First(l => l.Name == InfoLayerName));
             map.InfoLayers.Add(map.Layers.First(l => l.Name == PolygonLayerName));
@@ -43,6 +45,13 @@ namespace Mapsui.Samples.Common.Maps
                 Name = PolygonLayerName,
                 DataSource = provider,
                 Style = null
+            };
+
+            // Just an example to show how to simply disable zoom-in on double-click on this layer
+            layer.DoubleTap += (sender, args) =>
+            {
+                if (args.Feature != null)
+                    args.Handled = true;
             };
 
             return layer;
@@ -88,10 +97,20 @@ namespace Mapsui.Samples.Common.Maps
                 ["Name"] = "Polygon with feature event handlers"
             };
             feature.Styles.Add(new VectorStyle() { Fill = new Brush(Color.Blue), Outline = new Pen(Color.Red) });
-            feature.Hovered += (sender, args) => {
-                feature.Styles.First().Opacity = 0.4f;
+            feature.HoveredOnce += (sender, args) => {
+                feature.Styles.First().Opacity = (args.ModifierCtrl) ? 0.4f : 0.2f;
                 args.MapNeedsRefresh = true;
-            }; 
+                args.Handled = true;
+            };
+            feature.HoverStopped += (sender, args) => {
+                feature.Styles.First().Opacity = 1.0f;
+                args.MapNeedsRefresh = true;
+                args.Handled = true;
+            };
+            feature.SingleTap += (sender, args) =>
+            {
+                ((VectorStyle) feature.Styles.First()).Fill.Color = Color.Green;
+            };
             return feature;
         }
 
@@ -197,6 +216,45 @@ namespace Mapsui.Samples.Common.Maps
                 SymbolScale = 0.8,
                 Fill = new Brush(new Color(251, 236, 215)),
                 Outline = { Color = Color.Gray, Width = 1 }
+            };
+        }
+
+        private static ILayer CreateHoverEventLayer(BoundingBox envelope)
+        {
+            var layer = new Layer(HoverEventLayerName)
+            {
+                DataSource = PointsSample.CreateProviderWithRandomPoints(envelope, 25),
+                Style = CreateHoverEventSymbolStyle()
+            };
+            layer.HoveredOnce += (sender, args) =>
+            {
+                if (args.Feature != null)
+                {
+                    args.Feature.Styles.Clear();
+                    args.Feature.Styles.Add(new SymbolStyle() {Outline = {Color = Color.Green, Width = 4}});
+                    args.MapNeedsRefresh = true;
+                }
+            };
+            layer.SingleTap += (sender, args) =>
+            {
+                if (args.Feature != null)
+                {
+                    var distance = args.ModifierShift ? 30.0 : -50.0;
+                    (args.Feature.Geometry as Point).X += args.Viewport.Resolution * distance;
+                    args.MapNeedsRefresh = true;
+                }
+            };
+
+            return layer;
+        }
+
+        private static SymbolStyle CreateHoverEventSymbolStyle()
+        {
+            return new SymbolStyle
+            {
+                SymbolScale = 0.8,
+                Fill = new Brush(new Color(34, 64, 115)),
+                Outline = { Color = Color.Green, Width = 2 }
             };
         }
 

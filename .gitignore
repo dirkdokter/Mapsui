@@ -29,6 +29,10 @@ bin/
 
 packages/
 
+AppPackages/
+
+BundleArtifacts/
+
 .vs/
 
 Release/

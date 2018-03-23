@@ -454,12 +454,12 @@ namespace Mapsui.UI.Wpf
             if (touchPoints.Count >= 2) // Pinch/zoom
             {
                 var(center, radius, angle) = GetPinchValues(touchPoints);
-                var args = new TouchedEventArgs(center, radius, angle, touchPoints);
+                var args = new TouchedEventArgs(center, radius, angle, touchPoints, null, Map.Viewport);
                 return OnTouchMove(args);
             }
             else if (touchPoints.Count() == 1)
             {
-                var args = new TouchedEventArgs(touchPoints.First(), Double.NaN, Double.NaN, touchPoints);
+                var args = new TouchedEventArgs(touchPoints.First(), Double.NaN, Double.NaN, touchPoints, null, Map.Viewport);
                 return OnTouchMove(args);
             }
 
@@ -468,7 +468,7 @@ namespace Mapsui.UI.Wpf
 
         private bool OnTouchMove(Point center, double radius, double angle)
         {
-            var args = new TouchedEventArgs(center, radius, angle);
+            var args = new TouchedEventArgs(center, radius, angle, null, null, Map.Viewport);
             return OnTouchMove(args);
         }
 

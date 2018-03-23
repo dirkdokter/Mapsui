@@ -53,9 +53,14 @@ namespace Mapsui.UI.Uwp
         private readonly Storyboard _zoomStoryBoard = new Storyboard();
         private bool _invalid;
         private Map _map;
-        private double _innerRotation;
+
+        public IRenderer Renderer => _renderer;
 
         public event EventHandler ViewportInitialized;
+
+        public static double MinimumDragDistance => DisplayInformation.GetForCurrentView().RawPixelsPerViewPixel * 10.0f;
+
+
 
         public MapControl()
         {
@@ -76,15 +81,8 @@ namespace Mapsui.UI.Uwp
             _renderer = new MapRenderer();
             _scale = GetSkiaScale();
 
-            PointerWheelChanged += MapControl_PointerWheelChanged;
 
-            ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Rotate;
-            ManipulationDelta += OnManipulationDelta;
-            ManipulationCompleted += OnManipulationCompleted;
-            ManipulationInertiaStarting += OnManipulationInertiaStarting;
-
-            Tapped += OnSingleTapped;
-            DoubleTapped += OnDoubleTapped;
+            _addEventHandlers();
 
             var orientationSensor = SimpleOrientationSensor.GetDefault();
             if (orientationSensor != null)
@@ -93,17 +91,17 @@ namespace Mapsui.UI.Uwp
                         .ConfigureAwait(false);
         }
 
-        private void OnDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        /*private void OnDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             var tabPosition = e.GetPosition(this).ToMapsui();
-            Map.InvokeInfo(tabPosition, tabPosition, _scale, _renderer.SymbolCache, WidgetTouched, 2);
+            Map.InvokeInfo(tabPosition, tabPosition, _scale, _renderer.SymbolCache, WidgetTouched, 2, ModifierCtrlPressed, ModifierShiftPressed);
         }
 
         private void OnSingleTapped(object sender, TappedRoutedEventArgs e)
         {
             var tabPosition = e.GetPosition(this).ToMapsui();
-            Map.InvokeInfo(tabPosition, tabPosition, _scale, _renderer.SymbolCache, WidgetTouched, 1);
-        }
+            Map.InvokeInfo(tabPosition, tabPosition, _scale, _renderer.SymbolCache, WidgetTouched, 1, ModifierCtrlPressed, ModifierShiftPressed);
+        }*/
 
         private static Rectangle CreateSelectRectangle()
         {
@@ -165,7 +163,7 @@ namespace Mapsui.UI.Uwp
             }
         }
 
-        private void MapControl_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+       /* private void MapControl_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
             if (ZoomLocked) return;
             if (!_map.Viewport.Initialized) return;
@@ -193,9 +191,9 @@ namespace Mapsui.UI.Uwp
             RefreshGraphics();
             _map.ViewChanged(true);
             OnViewChanged(true);
-        }
+        }*/
 
-        private double DetermineNewResolution(int mouseWheelDelta, double currentResolution)
+       /* private double DetermineNewResolution(int mouseWheelDelta, double currentResolution)
         {
             if (mouseWheelDelta > 0)
             {
@@ -212,21 +210,13 @@ namespace Mapsui.UI.Uwp
                     _map.ZoomMode, _map.ZoomLimits, _map.Resolutions, _map.Envelope);
             }
             return currentResolution;
-        }
+        }*/
 
         private void OnViewChanged(bool userAction = false)
         {
             if (_map != null)
                 ViewChanged?.Invoke(this, new ViewChangedEventArgs { Viewport = Map.Viewport, UserAction = userAction });
         }
-
-
-        public void RefreshGraphics()
-        {
-            InvalidateCanvas();
-            _invalid = true;
-        }
-
 
 
         internal void InvalidateCanvas()
@@ -238,7 +228,7 @@ namespace Mapsui.UI.Uwp
         }
 
 
-
+        /*
         public void ZoomIn()
         {
             if (ZoomLocked) return;
@@ -257,7 +247,7 @@ namespace Mapsui.UI.Uwp
             Map.Viewport.Resolution = ZoomHelper.ZoomOut(_map.Resolutions, Map.Viewport.Resolution);
 
             OnViewChanged();
-        }
+        }*/
 
         protected void OnErrorMessageChanged(EventArgs e)
         {
@@ -400,55 +390,6 @@ namespace Mapsui.UI.Uwp
             Map.Viewport.Center = Map.Envelope.GetCentroid();
 
             OnViewChanged();
-        }
-
-        private static void OnManipulationInertiaStarting(object sender, ManipulationInertiaStartingRoutedEventArgs e)
-        {
-            e.TranslationBehavior.DesiredDeceleration = 25 * 96.0 / (1000.0 * 1000.0);
-        }
-
-
-        private void OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            var (center, radius, angle) = (e.Position.ToMapsui(), e.Delta.Scale, e.Delta.Rotation);
-            var (prevCenter, prevRadius, prevAngle) = (e.Position.ToMapsui().Offset(-e.Delta.Translation.X, -e.Delta.Translation.Y), 1f, 0f);
-
-            double rotationDelta = 0;
-
-            if (RotationLock)
-            {
-                _innerRotation += angle - prevAngle;
-                _innerRotation %= 360;
-
-                if (_innerRotation > 180)
-                    _innerRotation -= 360;
-                else if (_innerRotation < -180)
-                    _innerRotation += 360;
-
-                if (_map.Viewport.Rotation == 0 && Math.Abs(_innerRotation) >= Math.Abs(UnSnapRotationDegrees))
-                    rotationDelta = _innerRotation;
-                else if (_map.Viewport.Rotation != 0)
-                {
-                    if (Math.Abs(_innerRotation) <= Math.Abs(ReSnapRotationDegrees))
-                        rotationDelta = -_map.Viewport.Rotation;
-                    else
-                        rotationDelta = _innerRotation - _map.Viewport.Rotation;
-                }
-            }
-
-            _map.Viewport.Transform(center.X, center.Y, prevCenter.X, prevCenter.Y, radius / prevRadius, rotationDelta);
-
-            ViewportLimiter.Limit(_map.Viewport, _map.ZoomMode, _map.ZoomLimits, _map.Resolutions,
-                _map.PanMode, _map.PanLimits, _map.Envelope);
-
-            _invalid = true;
-            OnViewChanged(true);
-            e.Handled = true;
-        }
-
-        private void OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            Refresh();
         }
 
         private void TryInitializeViewport()

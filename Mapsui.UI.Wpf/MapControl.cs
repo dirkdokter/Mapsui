@@ -68,6 +68,8 @@ namespace Mapsui.UI.Wpf
 
         private SKElement RenderElement { get; } = CreateSkiaRenderElement();
 
+        public static double MinimumDragDistance => Math.Max(SystemParameters.MinimumHorizontalDragDistance,
+            SystemParameters.MinimumVerticalDragDistance);
         public RenderMode RenderMode
         {
             get => _renderMode;

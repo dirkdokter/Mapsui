@@ -72,6 +72,7 @@ namespace Mapsui.UI.Wpf
         /// </summary>
         private IUiEventReceiver _previousHoverObject = null;
 
+
         /// <summary>
         /// Events
         /// </summary>
@@ -371,7 +372,7 @@ namespace Mapsui.UI.Wpf
             if (touchPoints.Count == 0) // Will always be true for WPF ManipulationCompleted
             {
                 // Check if the touch event was actually a tap/click
-                if (_previousTouchStart != null && IsClick(_previousTouchStart, releasedPoint) && _mode == TouchMode.Dragging)
+                if (_previousTouchStart != null && !_previousTouchStart.IsEmpty() && IsClick(_previousTouchStart, releasedPoint) && _mode == TouchMode.Dragging)
                 {
                     _mode = TouchMode.None;
                     return OnSingleTapped(releasedPoint, timestamp);
@@ -401,8 +402,37 @@ namespace Mapsui.UI.Wpf
         /// <param name="touchPoints">List of all touched points</param>
         private bool OnTouchMove(List<Geometries.Point> touchPoints)
         {
-            var args = new TouchedEventArgs(touchPoints);
+            if (_mode == TouchMode.Dragging && touchPoints.Count != 1)
+                return false;
 
+            if (touchPoints.Count >= 2) // Pinch/zoom
+            {
+                var(center, radius, angle) = GetPinchValues(touchPoints);
+                var args = new TouchedEventArgs(center, radius, angle, touchPoints);
+                return OnTouchMove(args);
+            }
+            else if (touchPoints.Count() == 1)
+            {
+                var args = new TouchedEventArgs(touchPoints.First(), Double.NaN, Double.NaN, touchPoints);
+                return OnTouchMove(args);
+            }
+
+            return false;
+        }
+
+        private bool OnTouchMove(Point center, double radius, double angle)
+        {
+            var args = new TouchedEventArgs(center, radius, angle);
+            return OnTouchMove(args);
+        }
+
+        private bool OnTouchMove(TouchedEventArgs args)
+        {
+            if (!args.OriginalTouchpointsAvaiable && args.Center.IsEmpty())
+            {
+                throw new ArgumentException();
+            }
+            
             TouchMove?.Invoke(this, args);
 
             if (args.Handled)
@@ -413,10 +443,7 @@ namespace Mapsui.UI.Wpf
             {
                 case TouchMode.Dragging:
                     {
-                        if (touchPoints.Count != 1)
-                            return false;
-
-                        var touchPosition = touchPoints.First();
+                        var touchPosition = args.Center;
 
                         if (_previousCenter != null && !_previousCenter.IsEmpty())
                         {
@@ -432,17 +459,16 @@ namespace Mapsui.UI.Wpf
                     break;
                 case TouchMode.Zooming:
                     {
-                        if (touchPoints.Count < 2)
+                        if (Double.IsNaN(args.Radius) || Double.IsNaN(args.Angle) || args.Center.IsEmpty())
                             return false;
 
                         var (prevCenter, prevRadius, prevAngle) = (_previousCenter, _previousRadius, _previousAngle);
-                        var (center, radius, angle) = GetPinchValues(touchPoints);
 
                         double rotationDelta = 0;
 
                         if (RotationLock)
                         {
-                            _innerRotation += angle - prevAngle;
+                            _innerRotation += args.Angle - prevAngle;
                             _innerRotation %= 360;
 
                             if (_innerRotation > 180)
@@ -450,7 +476,7 @@ namespace Mapsui.UI.Wpf
                             else if (_innerRotation < -180)
                                 _innerRotation += 360;
 
-                            if (_map.Viewport.Rotation == 0 && Math.Abs(_innerRotation) >= Math.Abs(UnSnapRotationDegrees) && Math.Abs(radius) > (SystemParameters.MinimumHorizontalDragDistance*20.0))
+                            if (_map.Viewport.Rotation == 0 && Math.Abs(_innerRotation) >= Math.Abs(UnSnapRotationDegrees) && Math.Abs(args.Radius) > (MinimumDragDistance*20.0))
                                 rotationDelta = _innerRotation;
                             else if (_map.Viewport.Rotation != 0)
                             {
@@ -461,15 +487,16 @@ namespace Mapsui.UI.Wpf
                             }
                         }
 
-                        _map.Viewport.Transform(center.X, center.Y, prevCenter.X, prevCenter.Y, radius / prevRadius, rotationDelta);
+                        _map.Viewport.Transform(args.Center.X, args.Center.Y, prevCenter.X, prevCenter.Y, args.Radius / prevRadius, rotationDelta);
 
-                        (_previousCenter, _previousRadius, _previousAngle) = (center, radius, angle);
+                        (_previousCenter, _previousRadius, _previousAngle) = (args.Center, args.Radius, args.Angle);
 
                         ViewportLimiter.Limit(_map.Viewport,
                             _map.ZoomMode, _map.ZoomLimits, _map.Resolutions,
                             _map.PanMode, _map.PanLimits, _map.Envelope);
 
                         Refresh();
+                        //RefreshGraphics();
                     }
                     break;
             }
@@ -520,8 +547,7 @@ namespace Mapsui.UI.Wpf
             if (!_previousTap.IsEmpty() && timestamp != null && _previousTapTime != null)
             {
                 // TODO make this configurable?
-                var maxDoubleTapDistance = 12.0f * Math.Max(SystemParameters.MinimumHorizontalDragDistance,
-                    SystemParameters.MinimumVerticalDragDistance);
+                var maxDoubleTapDistance = 12.0f * MinimumDragDistance;
 
                 var previousTapWasCloseby = Algorithms.Distance(_previousTap, screenPosition) < maxDoubleTapDistance;
 
@@ -784,8 +810,8 @@ namespace Mapsui.UI.Wpf
         private static bool IsClick(Point currentPosition, Point previousPosition)
         {
             return
-                Math.Abs(currentPosition.X - previousPosition.X) < SystemParameters.MinimumHorizontalDragDistance &&
-                Math.Abs(currentPosition.Y - previousPosition.Y) < SystemParameters.MinimumVerticalDragDistance;
+                Math.Abs(currentPosition.X - previousPosition.X) < MinimumDragDistance &&
+                Math.Abs(currentPosition.Y - previousPosition.Y) < MinimumDragDistance;
         }
 
 

@@ -136,7 +136,6 @@ namespace Mapsui.UI.Wpf
         /// </summary>
         public event EventHandler<ZoomedEventArgs> Zoomed;
 
-
         /// <summary>
         /// Properties
         /// </summary>
@@ -165,7 +164,6 @@ namespace Mapsui.UI.Wpf
         /// With how many degrees from 0 should map snap to 0 degrees
         /// </summary>
         public double ReSnapRotationDegrees { get; set; }
-
         
         /// <summary>
         /// Event handlers
@@ -285,7 +283,6 @@ namespace Mapsui.UI.Wpf
                 if (args.Handled) return;
             }
         }
-
 
         /// <summary>
         /// Called, when mouse/finger/pen swiped over map
@@ -441,7 +438,6 @@ namespace Mapsui.UI.Wpf
             return args.Handled;
         }
 
-        
         private bool OnTouchEnd(Geometries.Point releasedPoint, int? timestamp = null)
         {
             return OnTouchEnd(new List<Point>(), releasedPoint, timestamp);

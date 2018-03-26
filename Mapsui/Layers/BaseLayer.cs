@@ -26,6 +26,7 @@ namespace Mapsui.Layers
         private object _tag;
         private ITransformation _transformation;
         private readonly Transformer _transformer = new Transformer();
+        public bool IncludeFeaturesInUserEvents { get; set; } = false;
 
         protected BaseLayer()
         {

@@ -244,6 +244,7 @@ namespace Mapsui.UI.Wpf
             foreach (var layer in reversedLayer)
             {
                 if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
+                if (layer.IncludeFeaturesInUserEvents == false) continue;
                 var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
                 args.Layer = layer;
                 args.Feature = null;
@@ -636,6 +637,7 @@ namespace Mapsui.UI.Wpf
             foreach (var layer in reversedLayer)
             {
                 if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
+                if (layer.IncludeFeaturesInUserEvents == false) continue;
                 var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
                 args.Layer = layer;
                 args.Feature = null;
@@ -900,5 +902,15 @@ namespace Mapsui.UI.Wpf
             }
         }
 
+        public List<IFeature> GetFeaturesForEvents()
+        {
+            var features = new List<IFeature>();
+            foreach (var l in Map.Layers.Where(a => a.IncludeFeaturesInUserEvents))
+            {
+                features.AddRange(l.GetFeaturesInView(Map.Viewport.Extent, Map.Viewport.Resolution));
+            }
+
+            return features;
+        }
     }
 }

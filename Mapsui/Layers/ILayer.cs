@@ -102,5 +102,7 @@ namespace Mapsui.Layers
         IReadOnlyList<double> Resolutions { get; }
 
         bool IsVisibleOnViewport(IViewport viewport);
+
+        bool IncludeFeaturesInUserEvents { get; set; }
     }
 }

@@ -203,7 +203,8 @@ namespace Mapsui.Samples.Common.Maps
             return new Layer(InfoLayerName)
             {
                 DataSource = PointsSample.CreateProviderWithRandomPoints(envelope, 25),
-                Style = CreateSymbolStyle()
+                Style = CreateSymbolStyle(),
+                IncludeFeaturesInUserEvents = true
             };
         }
 
@@ -212,7 +213,8 @@ namespace Mapsui.Samples.Common.Maps
             return new Layer(HoverLayerName)
             {
                 DataSource = PointsSample.CreateProviderWithRandomPoints(envelope, 25),
-                Style = CreateHoverSymbolStyle()
+                Style = CreateHoverSymbolStyle(),
+                IncludeFeaturesInUserEvents = true
             };
         }
 
@@ -231,7 +233,8 @@ namespace Mapsui.Samples.Common.Maps
             var layer = new Layer(HoverEventLayerName)
             {
                 DataSource = PointsSample.CreateProviderWithRandomPoints(envelope, 25),
-                Style = CreateHoverEventSymbolStyle()
+                Style = CreateHoverEventSymbolStyle(),
+                IncludeFeaturesInUserEvents = true
             };
             layer.HoveredOnce += (sender, args) =>
             {

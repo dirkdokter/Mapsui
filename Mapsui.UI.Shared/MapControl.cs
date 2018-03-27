@@ -326,12 +326,12 @@ namespace Mapsui.UI.Wpf
         private bool OnTouchStart(List<Geometries.Point> touchPoints, int? timestamp = null)
         {
             var args = new TouchedEventArgs(touchPoints, timestamp);
-
+            
             TouchStarted?.Invoke(this, args);
 
             if (args.Handled)
                 return true;
-
+            
             if (touchPoints.Count >= 2)
             {
                 (_previousCenter, _previousRadius, _previousAngle) = GetPinchValues(touchPoints);
@@ -354,17 +354,39 @@ namespace Mapsui.UI.Wpf
                 foreach (var layer in reversedLayer)
                 {
                     if (!layer.IsVisibleOnViewport(Map.Viewport)) continue;
+                    if (layer.IncludeFeaturesInUserEvents == false) continue;
                     var featuresInView = layer.GetFeaturesInView(layer.Envelope, Map.Viewport.Resolution);
                     args.Layer = layer;
                     args.Feature = null;
-                    
+
+                    foreach (var feature in featuresInView)
+                    {
+                        // Check if the mouse is above the feature
+                        bool mouseIsTouchingFeature = InfoHelper.IsTouchingTakingIntoAccountSymbolStyles(
+                            ScreenToWorld(touchPoints.First()), feature, layer.Style, Map.Viewport.Resolution,
+                            Renderer.SymbolCache);
+
+                        if (!mouseIsTouchingFeature) continue;
+
+                        args.Layer = layer;
+                        args.Feature = feature;
+
+                        // Check if the feature wants to handle this touch/drag action
+                        feature.OnTouchStarted(args);
+                        if (args.Handled)
+                        {
+                            _touchHandlingObject = feature;
+                            return true;
+                        }
+                    }
+
                     // If no feature wants to handle it, maybe the layer wants to handle it
-                    //layer.OnTouchStarted(args);
-                    //if (args.Handled)
-                    //{
-                     //   _touchHandlingObject = layer;
-                       // return true;
-                    //};
+                    layer.OnTouchStarted(args);
+                    if (args.Handled)
+                    {
+                       _touchHandlingObject = layer;
+                     return true;
+                    };
                 }
             }
             return true;

@@ -44,7 +44,8 @@ namespace Mapsui.Samples.Common.Maps
             {
                 Name = PolygonLayerName,
                 DataSource = provider,
-                Style = null
+                Style = null,
+                IncludeFeaturesInUserEvents = true
             };
 
             // Just an example to show how to simply disable zoom-in on double-click on this layer
